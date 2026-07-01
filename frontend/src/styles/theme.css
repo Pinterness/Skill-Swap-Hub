@@ -1,0 +1,33 @@
+/* 1. ĐỊNH NGHĨA MÃ MÀU GỐC (Bạn đang thiếu phần này) */
+:root {
+  --background: #080A1A;
+  --foreground: #F0F0FF;
+  --card: #10132A;
+  --card-foreground: #F0F0FF;
+  --primary: #FF6B4A;
+  --primary-foreground: #ffffff;
+  --secondary: #1E2040;
+  --secondary-foreground: #F0F0FF;
+  --accent: #7C3AED;
+  --accent-foreground: #ffffff;
+  --muted: #1A1D38;
+  --muted-foreground: #8B8EAD;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+/* 2. DẠY TAILWIND CÁCH ĐỌC MÀU (Phần bạn đã làm đúng) */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+}
