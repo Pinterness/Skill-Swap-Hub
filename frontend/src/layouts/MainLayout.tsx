@@ -35,7 +35,7 @@ const navItems = [
     label: "Tin nhắn",
     icon: MessageSquare,
     path: "/dashboard/chat",
-    badge: 0, // sẽ được ghi đè bằng số thực tế lấy từ ChatNotificationContext
+    badge: 0,
   },
   { key: "profile", label: "Hồ sơ", icon: User, path: "/dashboard/profile" },
   { key: "review", label: "Đánh giá", icon: Star, path: "/dashboard/review" },
@@ -87,7 +87,6 @@ export default function MainLayout({
             .slice(0, 4)
             .map(({ key, label, icon: Icon, path, badge }) => {
               const active = location.pathname === path;
-              // Với mục "Tin nhắn", dùng số chưa đọc thực tế thay vì badge tĩnh = 0
               const displayBadge = key === "chat" ? totalUnread : badge;
 
               return (

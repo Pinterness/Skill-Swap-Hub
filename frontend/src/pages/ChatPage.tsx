@@ -5,13 +5,11 @@ import {
   Send,
   MessageSquare,
   Video,
-  PhoneOff,
   Users,
   UserPlus,
   LogOut,
 } from "lucide-react";
 import { socket } from "../lib/socket";
-import JitsiMeeting from "../components/JitsiMeeting";
 import CreateGroupModal from "../components/CreateGroupModal";
 import { useChatNotifications } from "../context/ChatNotificationContext";
 
@@ -65,7 +63,10 @@ export default function ChatPage() {
   const { token, user } = useAuth();
   const userId = user?.id || (user as any)?._id;
   const headers = { Authorization: `Bearer ${token}` };
-  const { unreadCounts, setActiveConversationId } = useChatNotifications();
+
+  // ── Đã lấy setActiveCallRoom từ Context ra ──
+  const { unreadCounts, setActiveConversationId, setActiveCallRoom } =
+    useChatNotifications();
 
   const [viewMode, setViewMode] = useState<"direct" | "groups">("direct");
 
@@ -86,28 +87,12 @@ export default function ChatPage() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const groupBottomRef = useRef<HTMLDivElement>(null);
 
-  // ── Cuộc gọi video ──
-  const [activeCallRoom, setActiveCallRoom] = useState<string | null>(null);
-  const [incomingCall, setIncomingCall] = useState<{
-    roomName: string;
-    callerName: string;
-    matchId: string;
-    callerId: string;
-  } | null>(null);
-
-  // ── Lời mời vào nhóm ──
-  const [groupInvite, setGroupInvite] = useState<{
-    groupId: string;
-    title: string;
-    teacherName: string;
-  } | null>(null);
-
   useEffect(() => {
     fetchMatches();
     fetchGroups();
   }, []);
 
-  // ── Đánh dấu "đang xem" đúng cuộc trò chuyện hiện tại (để không hiện toast/badge cho nó) ──
+  // ── Đánh dấu "đang xem" đúng cuộc trò chuyện hiện tại ──
   useEffect(() => {
     if (viewMode === "direct" && selectedMatch) {
       setActiveConversationId(selectedMatch._id);
@@ -122,7 +107,7 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMatch, selectedGroup, viewMode]);
 
-  // ── Lắng nghe socket cho cuộc trò chuyện đang mở (để hiện tin nhắn ngay trong khung chat) ──
+  // ── Lắng nghe tin nhắn mới để cập nhật khung chat đang mở ──
   useEffect(() => {
     const handleNewMessage = (msg: Message) => {
       if (msg.matchId === selectedMatch?._id) {
@@ -136,39 +121,12 @@ export default function ChatPage() {
       }
     };
 
-    const handleIncomingCall = (data: {
-      roomName: string;
-      callerName: string;
-      matchId: string;
-      callerId: string;
-    }) => {
-      setIncomingCall(data);
-    };
-
-    const handleCallCancelled = () => {
-      setIncomingCall(null);
-    };
-
-    const handleGroupInvite = (data: {
-      groupId: string;
-      title: string;
-      teacherName: string;
-    }) => {
-      setGroupInvite(data);
-    };
-
     socket.on("new_message", handleNewMessage);
     socket.on("new_group_message", handleNewGroupMessage);
-    socket.on("incoming_call", handleIncomingCall);
-    socket.on("call_cancelled", handleCallCancelled);
-    socket.on("group_invite", handleGroupInvite);
 
     return () => {
       socket.off("new_message", handleNewMessage);
       socket.off("new_group_message", handleNewGroupMessage);
-      socket.off("incoming_call", handleIncomingCall);
-      socket.off("call_cancelled", handleCallCancelled);
-      socket.off("group_invite", handleGroupInvite);
     };
   }, [selectedMatch, selectedGroup]);
 
@@ -299,8 +257,7 @@ export default function ChatPage() {
     );
   };
 
-  // ── Cuộc gọi video 1-1 ──
-
+  // ── Bắt đầu cuộc gọi bằng setActiveCallRoom từ Context ──
   const startCall = () => {
     if (!selectedMatch) return;
     const other = getOther(selectedMatch);
@@ -315,23 +272,12 @@ export default function ChatPage() {
     setActiveCallRoom(roomName);
   };
 
-  const acceptIncomingCall = () => {
-    if (!incomingCall) return;
-    setActiveCallRoom(incomingCall.roomName);
-    setIncomingCall(null);
-  };
-
-  const declineIncomingCall = () => {
-    if (!incomingCall) return;
-    socket.emit("call_cancel", {
-      matchId: incomingCall.matchId,
-      callerId: incomingCall.callerId,
-    });
-    setIncomingCall(null);
+  const startGroupCall = () => {
+    if (!selectedGroup) return;
+    setActiveCallRoom(selectedGroup.roomName);
   };
 
   // ── Nhóm học ──
-
   const isGroupTeacher = (group: Group) => group.teacher._id === userId;
 
   const myMemberStatus = (group: Group) =>
@@ -339,30 +285,6 @@ export default function ChatPage() {
 
   const acceptedMembers = (group: Group) =>
     group.members.filter((m) => m.status === "accepted");
-
-  const startGroupCall = () => {
-    if (!selectedGroup) return;
-    setActiveCallRoom(selectedGroup.roomName);
-  };
-
-  const respondGroupInvite = async (accept: boolean) => {
-    if (!groupInvite) return;
-    try {
-      await axios.put(
-        `${API}/group/${groupInvite.groupId}/respond`,
-        { accept },
-        { headers },
-      );
-      setGroupInvite(null);
-      if (accept) {
-        await fetchGroups();
-        setViewMode("groups");
-      }
-    } catch (err) {
-      console.error(err);
-      setGroupInvite(null);
-    }
-  };
 
   const closeGroup = async () => {
     if (!selectedGroup) return;
@@ -696,68 +618,6 @@ export default function ChatPage() {
           </div>
         ))}
 
-      {/* ── Popup báo có cuộc gọi 1-1 đến ── */}
-      {incomingCall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <Video className="w-7 h-7 text-primary" />
-            </div>
-            <h3 className="text-base font-semibold mb-1">
-              {incomingCall.callerName} đang gọi video...
-            </h3>
-            <p className="text-xs text-muted-foreground mb-6">
-              Cuộc gọi qua Jitsi Meet
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={declineIncomingCall}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-border text-sm font-medium rounded-xl hover:bg-secondary transition-colors"
-              >
-                <PhoneOff className="w-4 h-4" /> Từ chối
-              </button>
-              <button
-                onClick={acceptIncomingCall}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors"
-              >
-                <Video className="w-4 h-4" /> Tham gia
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Popup lời mời vào nhóm học ── */}
-      {groupInvite && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
-            <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
-              <Users className="w-7 h-7 text-purple-500" />
-            </div>
-            <h3 className="text-base font-semibold mb-1">
-              {groupInvite.teacherName} mời bạn vào buổi học nhóm
-            </h3>
-            <p className="text-xs text-muted-foreground mb-6">
-              "{groupInvite.title}"
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => respondGroupInvite(false)}
-                className="flex-1 py-2.5 border border-border text-sm font-medium rounded-xl hover:bg-secondary transition-colors"
-              >
-                Từ chối
-              </button>
-              <button
-                onClick={() => respondGroupInvite(true)}
-                className="flex-1 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors"
-              >
-                Tham gia
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Modal tạo nhóm ── */}
       {showCreateGroup && (
         <CreateGroupModal
@@ -765,15 +625,6 @@ export default function ChatPage() {
           token={token}
           onClose={() => setShowCreateGroup(false)}
           onCreated={fetchGroups}
-        />
-      )}
-
-      {/* ── Cửa sổ cuộc gọi video ── */}
-      {activeCallRoom && (
-        <JitsiMeeting
-          roomName={activeCallRoom}
-          displayName={user?.username || "Người dùng"}
-          onClose={() => setActiveCallRoom(null)}
         />
       )}
     </div>
