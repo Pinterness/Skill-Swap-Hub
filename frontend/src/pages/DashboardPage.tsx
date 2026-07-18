@@ -49,9 +49,32 @@ export default function DashboardPage() {
   ];
   const LEVELS = ["Cơ bản", "Trung cấp", "Nâng cao"];
 
+  const [liveData, setLiveData] = useState({
+    taught: user?.stats?.totalTaught || 0,
+    rating: user?.stats?.averageRating || 0,
+    friends: user?.friends?.length || 0,
+  });
+
   useEffect(() => {
     fetchPosts();
+    fetchLiveStats();
   }, []);
+
+  const fetchLiveStats = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await axios.get(`${API}/profile/${user.id}`);
+      if (res.data?.user) {
+        setLiveData({
+          taught: res.data.user.stats?.totalTaught || 0,
+          rating: res.data.user.stats?.averageRating || 0,
+          friends: res.data.user.friends?.length || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi lấy thống kê realtime:", error);
+    }
+  };
 
   const fetchPosts = async (params = {}) => {
     try {
@@ -110,27 +133,26 @@ export default function DashboardPage() {
         <div className="bg-secondary rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <BookOpen className="w-4 h-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Buổi học</span>
+            <span className="text-xs text-muted-foreground">Buổi dạy</span>
           </div>
-          <p className="text-2xl font-semibold">
-            {user?.stats?.totalTaught ?? 0}
-          </p>
+          {/* ĐÃ SỬA: Sử dụng liveData */}
+          <p className="text-2xl font-semibold">{liveData.taught}</p>
         </div>
         <div className="bg-secondary rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Star className="w-4 h-4 text-yellow-400" />
             <span className="text-xs text-muted-foreground">Đánh giá TB</span>
           </div>
-          <p className="text-2xl font-semibold">
-            {user?.stats?.averageRating ?? "—"}
-          </p>
+          {/* ĐÃ SỬA: Sử dụng liveData */}
+          <p className="text-2xl font-semibold">{liveData.rating || "—"}</p>
         </div>
         <div className="bg-secondary rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-blue-400" />
             <span className="text-xs text-muted-foreground">Kết nối</span>
           </div>
-          <p className="text-2xl font-semibold">{user?.friends?.length ?? 0}</p>
+          {/* ĐÃ SỬA: Sử dụng liveData */}
+          <p className="text-2xl font-semibold">{liveData.friends}</p>
         </div>
       </div>
 
@@ -172,8 +194,8 @@ export default function DashboardPage() {
         <div className="flex gap-1 p-1 bg-secondary rounded-xl">
           {[
             { v: "", l: "Tất cả" },
-            { v: "learning", l: "🎓 Tìm học" },
-            { v: "teaching", l: "📚 Tìm dạy" },
+            { v: "learning", l: "🎓 học" },
+            { v: "teaching", l: "📚 dạy" },
           ].map((opt) => (
             <button
               key={opt.v}

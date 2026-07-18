@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useChatNotifications } from "../context/ChatNotificationContext";
 import {
   LayoutGrid,
   Users,
@@ -34,7 +35,7 @@ const navItems = [
     label: "Tin nhắn",
     icon: MessageSquare,
     path: "/dashboard/chat",
-    badge: 0,
+    badge: 0, // sẽ được ghi đè bằng số thực tế lấy từ ChatNotificationContext
   },
   { key: "profile", label: "Hồ sơ", icon: User, path: "/dashboard/profile" },
   { key: "review", label: "Đánh giá", icon: Star, path: "/dashboard/review" },
@@ -48,6 +49,13 @@ export default function MainLayout({
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { unreadCounts } = useChatNotifications();
+
+  // Tổng số tin nhắn chưa đọc từ TẤT CẢ cuộc trò chuyện (1-1 lẫn nhóm)
+  const totalUnread = Object.values(unreadCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
 
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()
@@ -75,28 +83,33 @@ export default function MainLayout({
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground px-2 py-2">
             Menu
           </p>
-          {navItems.slice(0, 4).map(({ label, icon: Icon, path, badge }) => {
-            const active = location.pathname === path;
-            return (
-              <Link
-                key={path}
-                to={path}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  active
-                    ? "bg-background text-primary font-medium border border-border"
-                    : "text-muted-foreground hover:bg-background hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-                {badge !== undefined && badge > 0 && (
-                  <span className="ml-auto text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-full">
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {navItems
+            .slice(0, 4)
+            .map(({ key, label, icon: Icon, path, badge }) => {
+              const active = location.pathname === path;
+              // Với mục "Tin nhắn", dùng số chưa đọc thực tế thay vì badge tĩnh = 0
+              const displayBadge = key === "chat" ? totalUnread : badge;
+
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    active
+                      ? "bg-background text-primary font-medium border border-border"
+                      : "text-muted-foreground hover:bg-background hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                  {displayBadge !== undefined && displayBadge > 0 && (
+                    <span className="ml-auto text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {displayBadge > 9 ? "9+" : displayBadge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
 
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground px-2 py-2 pt-4">
             Cá nhân

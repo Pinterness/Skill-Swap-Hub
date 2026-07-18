@@ -136,31 +136,19 @@ router.put("/complete/:sessionId", auth, async (req, res) => {
     session.endedAt = new Date();
     await session.save();
 
-    // Cập nhật stats
+    // Cập nhật stats (Cộng +1 buổi)
     await User.findByIdAndUpdate(session.teacherId, {
       $inc: { "stats.totalTaught": 1 },
     });
     await User.findByIdAndUpdate(session.studentId, {
       $inc: { "stats.totalLearned": 1 },
     });
-    const Post = require("../models/Post");
-    const match = await require("../models/Match").findById(session.matchId);
-    if (match) {
-      await Post.updateMany(
-        {
-          author: { $in: [session.teacherId, session.studentId] },
-          status: "active",
-        },
-        { status: "closed" },
-      );
-    }
 
     res.json({ success: true, message: "Buổi học đã hoàn thành", session });
   } catch (error) {
     res.status(500).json({ success: false, message: "Lỗi hệ thống" });
   }
 });
-
 // Hủy buổi học
 router.put("/cancel/:sessionId", auth, async (req, res) => {
   try {

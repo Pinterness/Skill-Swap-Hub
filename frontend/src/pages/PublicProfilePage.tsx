@@ -40,6 +40,7 @@ export default function PublicProfilePage() {
       setLoading(false);
     }
   };
+
   const handleSendMatch = async () => {
     setSending(true);
     setMatchError("");
@@ -62,6 +63,7 @@ export default function PublicProfilePage() {
       setSending(false);
     }
   };
+
   const initials = (name: string) => name?.slice(0, 2).toUpperCase();
 
   if (loading)
@@ -106,9 +108,15 @@ export default function PublicProfilePage() {
             <div>
               <h2 className="text-lg font-semibold">{profile.username}</h2>
               <div className="flex items-center gap-3 mt-1">
-                <span className="flex items-center gap-1 text-xs text-yellow-500">
+                {/* ĐÃ SỬA: Biến điểm sao thành nút bấm chuyển sang trang ReviewPage */}
+                <span
+                  onClick={() => navigate(`/dashboard/reviews/${userId}`)}
+                  className="flex items-center gap-1 text-xs text-yellow-500 cursor-pointer hover:text-yellow-600 transition-colors"
+                  title="Xem chi tiết tất cả đánh giá"
+                >
                   <Star className="w-3.5 h-3.5 fill-yellow-500" />
-                  {profile.stats?.averageRating || "—"}
+                  {profile.stats?.averageRating || "—"} (
+                  {profile.stats?.totalReviews || 0})
                 </span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <BookOpen className="w-3.5 h-3.5" />
@@ -206,7 +214,6 @@ export default function PublicProfilePage() {
       </div>
 
       {/* Bài đăng */}
-      {/* Bài đăng */}
       {posts && posts.length > 0 && (
         <div className="mb-5">
           <h3 className="text-sm font-medium mb-3">
@@ -217,7 +224,7 @@ export default function PublicProfilePage() {
               <div
                 key={post._id}
                 className="bg-card border border-border rounded-xl p-4 cursor-pointer hover:border-primary/40 transition-colors"
-                onClick={() => navigate(`/dashboard/post/${post._id}`)} // Bấm vào để xem chi tiết bài viết
+                onClick={() => navigate(`/dashboard/post/${post._id}`)}
               >
                 <h4 className="text-sm font-medium mb-1 group-hover:text-primary transition-colors">
                   {post.title}
@@ -226,7 +233,6 @@ export default function PublicProfilePage() {
                   {post.description}
                 </p>
 
-                {/* ĐÃ SỬA: Cập nhật giống trang Dashboard và thêm dấu ? an toàn */}
                 <div className="flex flex-wrap gap-1.5">
                   {post.type && (
                     <span
@@ -254,8 +260,6 @@ export default function PublicProfilePage() {
                       {post.skill.name}
                     </span>
                   )}
-
-                  {/* Vẫn giữ lại mảng cũ cho các bài đăng từ ngày xưa (có thêm dấu ? để chống sập web) */}
                   {post.skillsRequired?.map((s: string) => (
                     <span
                       key={`req-${s}`}
@@ -282,9 +286,19 @@ export default function PublicProfilePage() {
       {/* Đánh giá */}
       {reviews.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium mb-3">
-            Đánh giá ({reviews.length})
-          </h3>
+          {/* ĐÃ SỬA: Thêm nút Xem tất cả */}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium">
+              Đánh giá ({profile.stats?.totalReviews || reviews.length})
+            </h3>
+            <button
+              onClick={() => navigate(`/dashboard/reviews/${userId}`)}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Xem tất cả →
+            </button>
+          </div>
+
           <div className="flex flex-col gap-3">
             {reviews.map((review) => (
               <div

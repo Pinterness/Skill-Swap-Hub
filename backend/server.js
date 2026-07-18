@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const postRoutes = require("./routes/post");
@@ -12,24 +14,70 @@ const reviewRoutes = require("./routes/review");
 const sessionRoutes = require("./routes/session");
 const adminRoutes = require("./routes/admin");
 const profileRoutes = require("./routes/profile");
+const groupRoutes = require("./routes/group");
+const Match = require("./models/Match");
 const cron = require("node-cron");
+
 const app = express();
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("🔌 Client kết nối socket:", socket.id);
+
+  // Client "định danh" bằng userId ngay sau khi kết nối/đăng nhập.
+  // Đây là cơ chế DUY NHẤT để nhận thông báo/tin nhắn real-time -
+  // mọi sự kiện cá nhân (tin nhắn, lời mời nhóm, cuộc gọi) đều gửi
+  // tới "phòng" mang tên chính userId này, nên luôn nhận được
+  // dù đang ở trang nào, không cần "join" theo từng cuộc trò chuyện.
+  socket.on("identify", (userId) => {
+    if (userId) {
+      socket.join(userId);
+      socket.data.userId = userId;
+      console.log("✅ User đã identify:", userId);
+    }
+  });
+
+  // ── Signaling gọi video 1-1 ──
+  // receiverId: id người được gọi, để server biết bắn tới đúng phòng cá nhân nào
+  socket.on("call_invite", ({ matchId, roomName, callerName, receiverId }) => {
+    if (!receiverId) return;
+    socket.to(receiverId).emit("incoming_call", {
+      roomName,
+      callerName,
+      matchId,
+      callerId: socket.data.userId,
+    });
+  });
+
+  socket.on("call_cancel", ({ matchId, callerId }) => {
+    if (!callerId) return;
+    socket.to(callerId).emit("call_cancelled", { matchId });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ Client ngắt kết nối socket:", socket.id);
+  });
+});
 
 cron.schedule("0 0 * * *", async () => {
   try {
     console.log("🤖 Chạy ngầm: Đang quét dọn lời mời quá hạn...");
 
-    // Tính mốc thời gian cách đây 7 ngày
     const clearDate = new Date();
     clearDate.setDate(clearDate.getDate() - 7);
 
-    // Tìm tất cả lời mời 'pending' tạo trước mốc 7 ngày và chuyển thành 'cancelled' (hoặc xóa hẳn bằng deleteMany)
     const result = await Match.updateMany(
       {
         status: "pending",
         createdAt: { $lt: clearDate },
       },
-      { status: "cancelled" }, // Hoặc dùng Match.deleteMany nếu muốn xóa sạch khỏi DB
+      { status: "cancelled" },
     );
 
     console.log(
@@ -54,8 +102,8 @@ app.use("/api/review", reviewRoutes);
 app.use("/api/session", sessionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/group", groupRoutes);
 
-// Hàm kết nối Database
 const connectDB = async () => {
   try {
     console.log("Đang thử kết nối đến MongoDB Atlas...");
@@ -69,11 +117,10 @@ const connectDB = async () => {
   }
 };
 
-// Khởi động server
 const startServer = async () => {
   await connectDB();
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại port ${PORT}`);
   });
 };

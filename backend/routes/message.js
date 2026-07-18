@@ -7,7 +7,6 @@ const auth = require("../middlewares/authMiddleware");
 // Lấy lịch sử chat (chỉ bạn bè mới chat được)
 router.get("/:matchId", auth, async (req, res) => {
   try {
-    console.log("Dữ liệu nhận được từ FE:", req.body);
     const match = await Match.findById(req.params.matchId);
     if (!match || match.status !== "accepted") {
       return res
@@ -64,6 +63,16 @@ router.post("/:matchId", auth, async (req, res) => {
     });
 
     const populated = await message.populate("sender", "username avatar");
+
+    // Bắn tới PHÒNG CÁ NHÂN (theo userId) của cả 2 người trong cuộc trò chuyện,
+    // thay vì phòng theo matchId - đảm bảo người nhận LUÔN thấy tin nhắn real-time
+    // dù họ đang không mở đúng cuộc trò chuyện này (cần thiết cho toast + badge)
+    const io = req.app.get("io");
+    if (io) {
+      io.to(match.sender.toString()).emit("new_message", populated);
+      io.to(match.receiver.toString()).emit("new_message", populated);
+    }
+
     res.status(201).json({ success: true, message: populated });
   } catch (error) {
     res.status(500).json({ success: false, message: "Lỗi hệ thống" });

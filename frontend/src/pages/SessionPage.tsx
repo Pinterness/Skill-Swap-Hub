@@ -7,6 +7,7 @@ import {
   PlayCircle,
   Clock,
   Calendar,
+  Star, // Đã thêm icon Star
 } from "lucide-react";
 
 interface Session {
@@ -34,6 +35,14 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+
+  // ====== THÊM STATE CHO MODAL ĐÁNH GIÁ ======
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(0);
 
   useEffect(() => {
     fetchSessions();
@@ -95,8 +104,43 @@ export default function SessionPage() {
     }
   };
 
+  // ====== THÊM HÀM GỬI ĐÁNH GIÁ ======
+  const handleSubmitReview = async () => {
+    if (!selectedSession) return;
+    setSubmitting(true);
+
+    // Xác định người bị đánh giá là ai (ngược lại với người đang đăng nhập)
+    const isTeacher = selectedSession.teacherId._id === user?.id;
+    const revieweeId = isTeacher
+      ? selectedSession.studentId._id
+      : selectedSession.teacherId._id;
+
+    try {
+      await axios.post(
+        `${API}/review`,
+        {
+          sessionId: selectedSession._id,
+          revieweeId,
+          rating,
+          comment,
+        },
+        { headers },
+      );
+
+      setSuccess("Cảm ơn bạn đã gửi đánh giá thành công!");
+      setShowReviewModal(false);
+      setRating(5);
+      setComment("");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Lỗi khi gửi đánh giá");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const filtered = sessions.filter((s) => s.status === tab);
-  const initials = (name: string) => name.slice(0, 2).toUpperCase();
+  const initials = (name: string) =>
+    name ? name.slice(0, 2).toUpperCase() : "U";
 
   const statusConfig = {
     pending: {
@@ -181,14 +225,16 @@ export default function SessionPage() {
             return (
               <div
                 key={session._id}
-                className="bg-card border border-border rounded-2xl p-5"
+                className="bg-card border border-border rounded-2xl p-5 hover:border-primary/30 transition-colors"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
-                    {initials(other.username)}
+                    {initials(other?.username)}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{other.username}</p>
+                    <p className="text-sm font-medium">
+                      {other?.username || "Ẩn danh"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {isTeacher ? "Bạn là giáo viên" : "Bạn là học viên"}
                     </p>
@@ -260,6 +306,7 @@ export default function SessionPage() {
                       </button>
                     </>
                   )}
+
                   {session.status === "ongoing" && (
                     <button
                       onClick={() => handleComplete(session._id)}
@@ -268,10 +315,96 @@ export default function SessionPage() {
                       <CheckCircle className="w-3.5 h-3.5" /> Hoàn thành
                     </button>
                   )}
+
+                  {/* NÚT ĐÁNH GIÁ (Chỉ hiện ở Tab Đã hoàn thành) */}
+                  {session.status === "completed" &&
+                    session.studentId._id === user?.id && (
+                      <button
+                        onClick={() => {
+                          setSelectedSession(session);
+                          setShowReviewModal(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-yellow-400 text-yellow-950 rounded-lg hover:bg-yellow-500 transition-colors shadow-sm"
+                      >
+                        <Star className="w-3.5 h-3.5 fill-yellow-950" /> Viết
+                        Đánh giá
+                      </button>
+                    )}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ====== GIAO DIỆN POP-UP MODAL ĐÁNH GIÁ ====== */}
+      {showReviewModal && selectedSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Đánh giá phiên học</h3>
+              <button onClick={() => setShowReviewModal(false)}>
+                <XCircle className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+              Bạn đánh giá buổi học với{" "}
+              <strong>
+                {selectedSession.teacherId._id === user?.id
+                  ? selectedSession.studentId.username
+                  : selectedSession.teacherId.username}
+              </strong>{" "}
+              như thế nào?
+            </p>
+
+            {/* Chọn Sao */}
+            <div className="flex justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map((starValue) => (
+                <button
+                  key={starValue}
+                  type="button"
+                  onClick={() => setRating(starValue)}
+                  onMouseEnter={() => setHoveredStar(starValue)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  className="focus:outline-none transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={`w-10 h-10 transition-colors ${
+                      starValue <= (hoveredStar || rating)
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* Nhập Comment */}
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Chia sẻ thêm về trải nghiệm của bạn (không bắt buộc)..."
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground resize-none mb-4"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSubmitReview}
+                disabled={submitting}
+                className="flex-1 flex items-center justify-center py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                {submitting ? "Đang gửi..." : "Gửi đánh giá"}
+              </button>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="px-4 py-2.5 border border-border text-sm rounded-xl hover:bg-secondary transition-colors text-muted-foreground"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,32 +1,28 @@
 const mongoose = require("mongoose");
 
-const SessionSchema = new mongoose.Schema(
+const MessageSchema = new mongoose.Schema(
   {
     matchId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Match",
       required: true,
     },
-    teacherId: {
+    sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    studentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    status: {
+    content: {
       type: String,
-      enum: ["pending", "ongoing", "completed", "cancelled"],
-      default: "pending",
+      required: true,
     },
-    scheduledAt: { type: Date },
-    startedAt: { type: Date },
-    endedAt: { type: Date },
+    type: {
+      type: String,
+      enum: ["text", "image", "call_invite"],
+      default: "text",
+    },
   },
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Message", SessionSchema);
+module.exports = mongoose.model("Message", MessageSchema);

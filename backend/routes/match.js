@@ -19,18 +19,27 @@ router.post("/send", auth, async (req, res) => {
       });
     }
 
-    // Kiểm tra trùng lặp
+    // Kiểm tra trùng lặp THEO CẶP NGƯỜI DÙNG, không phân biệt ai gửi ai nhận,
+    // và không phân biệt theo postId - để đảm bảo 2 người chỉ có DUY NHẤT 1
+    // "kết nối" (match) với nhau, tránh tách rời lịch sử chat thành nhiều luồng.
     const existing = await Match.findOne({
-      sender: senderId,
-      receiver: receiverId,
-      postId: postId || null,
+      $or: [
+        { sender: senderId, receiver: receiverId },
+        { sender: receiverId, receiver: senderId },
+      ],
       status: { $in: ["pending", "accepted"] },
     });
 
     if (existing) {
+      if (existing.status === "accepted") {
+        return res.status(400).json({
+          success: false,
+          message: "Bạn đã kết nối với người này rồi",
+        });
+      }
       return res.status(400).json({
         success: false,
-        message: "Bạn đã gửi lời mời kết nối cho bài đăng này rồi",
+        message: "Đã có lời mời kết nối đang chờ xử lý giữa 2 người",
       });
     }
 
@@ -54,7 +63,7 @@ router.post("/send", auth, async (req, res) => {
   }
 });
 
-// 2. LẤY DANH SÁCH ĐÃ GỬI (Bổ sung populate đầy đủ)
+// 2. LẤY DANH SÁCH ĐÃ GỬI
 router.get("/sent", auth, async (req, res) => {
   try {
     const matches = await Match.find({ sender: req.user.id })
@@ -67,7 +76,7 @@ router.get("/sent", auth, async (req, res) => {
   }
 });
 
-// 3. LẤY DANH SÁCH ĐÃ NHẬN (Bổ sung populate đầy đủ)
+// 3. LẤY DANH SÁCH ĐÃ NHẬN
 router.get("/received", auth, async (req, res) => {
   try {
     const matches = await Match.find({ receiver: req.user.id })
@@ -81,7 +90,6 @@ router.get("/received", auth, async (req, res) => {
 });
 
 // 4. CHẤP NHẬN LỜI MỜI
-
 router.put("/accept/:matchId", auth, async (req, res) => {
   try {
     const match = await Match.findById(req.params.matchId);
@@ -99,7 +107,6 @@ router.put("/accept/:matchId", auth, async (req, res) => {
     match.status = "accepted";
     await match.save();
 
-    // Xử lý ẩn bài viết
     if (match.postId) {
       const Post = require("../models/Post");
       const targetPost = await Post.findById(match.postId);
@@ -110,14 +117,12 @@ router.put("/accept/:matchId", auth, async (req, res) => {
       }
     }
 
-    // Tự động tạo session
     const session = await Session.create({
       matchId: match._id,
       teacherId: match.sender,
       studentId: match.receiver,
     });
 
-    // Thêm vào bạn bè
     await User.findByIdAndUpdate(match.sender, {
       $addToSet: { friends: match.receiver },
     });
@@ -161,7 +166,7 @@ router.put("/reject/:matchId", auth, async (req, res) => {
   }
 });
 
-//rut loi moi
+// Rút lời mời
 router.delete("/cancel/:matchId", auth, async (req, res) => {
   try {
     const match = await Match.findById(req.params.matchId);

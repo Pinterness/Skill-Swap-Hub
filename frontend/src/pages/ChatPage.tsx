@@ -1,27 +1,75 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
-import { Send, MessageSquare } from "lucide-react";
+import {
+  Send,
+  MessageSquare,
+  Video,
+  PhoneOff,
+  Users,
+  UserPlus,
+  LogOut,
+} from "lucide-react";
+import { socket } from "../lib/socket";
+import JitsiMeeting from "../components/JitsiMeeting";
+import CreateGroupModal from "../components/CreateGroupModal";
+import { useChatNotifications } from "../context/ChatNotificationContext";
+
+interface SimpleUser {
+  _id: string;
+  username: string;
+  avatar?: string;
+}
 
 interface Match {
   _id: string;
-  sender: { _id: string; username: string; avatar?: string };
-  receiver: { _id: string; username: string; avatar?: string };
+  sender: SimpleUser;
+  receiver: SimpleUser;
   status: string;
 }
 
 interface Message {
   _id: string;
-  sender: { _id: string; username: string; avatar?: string };
+  sender: SimpleUser;
   content: string;
   type: string;
   createdAt: string;
+  matchId?: string;
+}
+
+interface GroupMember {
+  user: SimpleUser;
+  status: "pending" | "accepted" | "declined";
+}
+
+interface Group {
+  _id: string;
+  teacher: SimpleUser;
+  title: string;
+  roomName: string;
+  members: GroupMember[];
+  status: "pending" | "active" | "closed";
+}
+
+interface GroupMessage {
+  _id: string;
+  sender: SimpleUser;
+  content: string;
+  createdAt: string;
+  groupId?: string;
 }
 
 const API = "http://localhost:5000/api";
 
 export default function ChatPage() {
   const { token, user } = useAuth();
+  const userId = user?.id || (user as any)?._id;
+  const headers = { Authorization: `Bearer ${token}` };
+  const { unreadCounts, setActiveConversationId } = useChatNotifications();
+
+  const [viewMode, setViewMode] = useState<"direct" | "groups">("direct");
+
+  // ── Chat 1-1 ──
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,19 +77,108 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const headers = { Authorization: `Bearer ${token}` };
+  // ── Nhóm học ──
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [groupMessages, setGroupMessages] = useState<GroupMessage[]>([]);
+  const [groupContent, setGroupContent] = useState("");
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const groupBottomRef = useRef<HTMLDivElement>(null);
+
+  // ── Cuộc gọi video ──
+  const [activeCallRoom, setActiveCallRoom] = useState<string | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{
+    roomName: string;
+    callerName: string;
+    matchId: string;
+    callerId: string;
+  } | null>(null);
+
+  // ── Lời mời vào nhóm ──
+  const [groupInvite, setGroupInvite] = useState<{
+    groupId: string;
+    title: string;
+    teacherName: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchMatches();
+    fetchGroups();
   }, []);
 
+  // ── Đánh dấu "đang xem" đúng cuộc trò chuyện hiện tại (để không hiện toast/badge cho nó) ──
   useEffect(() => {
-    if (selectedMatch) fetchMessages(selectedMatch._id);
-  }, [selectedMatch]);
+    if (viewMode === "direct" && selectedMatch) {
+      setActiveConversationId(selectedMatch._id);
+      fetchMessages(selectedMatch._id);
+    } else if (viewMode === "groups" && selectedGroup) {
+      setActiveConversationId(`group_${selectedGroup._id}`);
+      fetchGroupMessages(selectedGroup._id);
+    } else {
+      setActiveConversationId(null);
+    }
+    return () => setActiveConversationId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMatch, selectedGroup, viewMode]);
+
+  // ── Lắng nghe socket cho cuộc trò chuyện đang mở (để hiện tin nhắn ngay trong khung chat) ──
+  useEffect(() => {
+    const handleNewMessage = (msg: Message) => {
+      if (msg.matchId === selectedMatch?._id) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    };
+
+    const handleNewGroupMessage = (msg: GroupMessage) => {
+      if (msg.groupId === selectedGroup?._id) {
+        setGroupMessages((prev) => [...prev, msg]);
+      }
+    };
+
+    const handleIncomingCall = (data: {
+      roomName: string;
+      callerName: string;
+      matchId: string;
+      callerId: string;
+    }) => {
+      setIncomingCall(data);
+    };
+
+    const handleCallCancelled = () => {
+      setIncomingCall(null);
+    };
+
+    const handleGroupInvite = (data: {
+      groupId: string;
+      title: string;
+      teacherName: string;
+    }) => {
+      setGroupInvite(data);
+    };
+
+    socket.on("new_message", handleNewMessage);
+    socket.on("new_group_message", handleNewGroupMessage);
+    socket.on("incoming_call", handleIncomingCall);
+    socket.on("call_cancelled", handleCallCancelled);
+    socket.on("group_invite", handleGroupInvite);
+
+    return () => {
+      socket.off("new_message", handleNewMessage);
+      socket.off("new_group_message", handleNewGroupMessage);
+      socket.off("incoming_call", handleIncomingCall);
+      socket.off("call_cancelled", handleCallCancelled);
+      socket.off("group_invite", handleGroupInvite);
+    };
+  }, [selectedMatch, selectedGroup]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    groupBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [groupMessages]);
 
   const fetchMatches = async () => {
     try {
@@ -49,7 +186,6 @@ export default function ChatPage() {
         axios.get(`${API}/match/received`, { headers }),
         axios.get(`${API}/match/sent`, { headers }),
       ]);
-      console.log("Dữ liệu Match Received:", recv.data.matches[0]);
       const accepted = [...recv.data.matches, ...sent.data.matches].filter(
         (m) => m.status === "accepted",
       );
@@ -57,7 +193,7 @@ export default function ChatPage() {
       const seen = new Set<string>();
       const unique = accepted.filter((match) => {
         const otherId =
-          match.sender._id === user?.id ? match.receiver._id : match.sender._id;
+          match.sender._id === userId ? match.receiver._id : match.sender._id;
         if (seen.has(otherId)) return false;
         seen.add(otherId);
         return true;
@@ -69,12 +205,12 @@ export default function ChatPage() {
       console.error(err);
     }
   };
+
   const fetchMessages = async (matchId: string) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/message/${matchId}`, { headers });
-      console.log("Dữ liệu tin nhắn nhận được:", res.data);
-      setMessages(res.data.messages || []); // Bọc mảng an toàn
+      setMessages(res.data.messages || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -82,33 +218,66 @@ export default function ChatPage() {
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const res = await axios.get(`${API}/group`, { headers });
+      setGroups(res.data.groups || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchGroupMessages = async (groupId: string) => {
+    try {
+      setGroupLoading(true);
+      const res = await axios.get(`${API}/group/${groupId}/messages`, {
+        headers,
+      });
+      setGroupMessages(res.data.messages || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGroupLoading(false);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || !selectedMatch) return;
     try {
-      const res = await axios.post(
+      await axios.post(
         `${API}/message/${selectedMatch._id}`,
         { content },
         { headers },
       );
-      setMessages((prev) => [...prev, res.data.message]);
       setContent("");
     } catch (err) {
       console.error(err);
     }
   };
 
-  // FIX 1: Bảo vệ hàm getOther tránh trường hợp null/undefined
-  const getOther = (match: Match) => {
-    if (!match || !match.sender || !match.receiver) return null;
-    return match.sender._id === user?.id ? match.receiver : match.sender;
+  const sendGroupMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupContent.trim() || !selectedGroup) return;
+    try {
+      await axios.post(
+        `${API}/group/${selectedGroup._id}/messages`,
+        { content: groupContent },
+        { headers },
+      );
+      setGroupContent("");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // FIX 2: Bảo vệ hàm cắt tên tránh trường hợp name bị rỗng
-  const initials = (name?: string) => {
-    if (!name) return "U"; // Trả về chữ U (User) mặc định nếu không có tên
-    return name.slice(0, 2).toUpperCase();
+  const getOther = (match: Match) => {
+    if (!match || !match.sender || !match.receiver) return null;
+    return match.sender._id === userId ? match.receiver : match.sender;
   };
+
+  const initials = (name?: string) =>
+    name ? name.slice(0, 2).toUpperCase() : "U";
 
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString("vi-VN", {
@@ -116,138 +285,496 @@ export default function ChatPage() {
       minute: "2-digit",
     });
 
+  const matchPartners: SimpleUser[] = useMemo(() => {
+    return matches.map((m) => getOther(m)).filter((u): u is SimpleUser => !!u);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches, userId]);
+
+  const badgeCount = (count?: number) => {
+    if (!count) return null;
+    return (
+      <span className="ml-auto shrink-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
+        {count > 9 ? "9+" : count}
+      </span>
+    );
+  };
+
+  // ── Cuộc gọi video 1-1 ──
+
+  const startCall = () => {
+    if (!selectedMatch) return;
+    const other = getOther(selectedMatch);
+    if (!other) return;
+    const roomName = `skillswap-${selectedMatch._id}`;
+    socket.emit("call_invite", {
+      matchId: selectedMatch._id,
+      roomName,
+      callerName: user?.username || "Người dùng",
+      receiverId: other._id,
+    });
+    setActiveCallRoom(roomName);
+  };
+
+  const acceptIncomingCall = () => {
+    if (!incomingCall) return;
+    setActiveCallRoom(incomingCall.roomName);
+    setIncomingCall(null);
+  };
+
+  const declineIncomingCall = () => {
+    if (!incomingCall) return;
+    socket.emit("call_cancel", {
+      matchId: incomingCall.matchId,
+      callerId: incomingCall.callerId,
+    });
+    setIncomingCall(null);
+  };
+
+  // ── Nhóm học ──
+
+  const isGroupTeacher = (group: Group) => group.teacher._id === userId;
+
+  const myMemberStatus = (group: Group) =>
+    group.members.find((m) => m.user._id === userId)?.status;
+
+  const acceptedMembers = (group: Group) =>
+    group.members.filter((m) => m.status === "accepted");
+
+  const startGroupCall = () => {
+    if (!selectedGroup) return;
+    setActiveCallRoom(selectedGroup.roomName);
+  };
+
+  const respondGroupInvite = async (accept: boolean) => {
+    if (!groupInvite) return;
+    try {
+      await axios.put(
+        `${API}/group/${groupInvite.groupId}/respond`,
+        { accept },
+        { headers },
+      );
+      setGroupInvite(null);
+      if (accept) {
+        await fetchGroups();
+        setViewMode("groups");
+      }
+    } catch (err) {
+      console.error(err);
+      setGroupInvite(null);
+    }
+  };
+
+  const closeGroup = async () => {
+    if (!selectedGroup) return;
+    if (!confirm("Kết thúc buổi học nhóm này?")) return;
+    try {
+      await axios.put(
+        `${API}/group/${selectedGroup._id}/close`,
+        {},
+        { headers },
+      );
+      setSelectedGroup(null);
+      fetchGroups();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="flex h-full">
-      {/* Danh sách chat */}
+    <div className="flex h-full relative">
+      {/* ── Sidebar ── */}
       <div className="w-64 min-w-64 border-r border-border flex flex-col">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-medium">Tin nhắn</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {matches.length === 0 ? (
-            <div className="p-4 text-center text-xs text-muted-foreground">
-              Chưa có cuộc trò chuyện nào
-            </div>
-          ) : (
-            matches.map((match) => {
-              const other = getOther(match);
-              const isSelected = selectedMatch?._id === match._id;
-
-              // Nếu dữ liệu người kia bị lỗi, bỏ qua không hiển thị để tránh sập
-              if (!other) return null;
-
-              return (
-                <button
-                  key={match._id}
-                  onClick={() => setSelectedMatch(match)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left ${
-                    isSelected ? "bg-secondary border-r-2 border-primary" : ""
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700 shrink-0">
-                    {initials(other.username)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {other.username || "Người dùng ẩn"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Nhấn để xem tin nhắn
-                    </p>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Khu vực chat */}
-      {selectedMatch && getOther(selectedMatch) ? (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="px-5 py-3 border-b border-border flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
-              {initials(getOther(selectedMatch)?.username)}
-            </div>
-            <span className="text-sm font-medium">
-              {getOther(selectedMatch)?.username || "Người dùng ẩn"}
-            </span>
+        <div className="p-3 border-b border-border">
+          <div className="flex gap-1 p-1 bg-secondary rounded-xl">
+            <button
+              onClick={() => setViewMode("direct")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                viewMode === "direct"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Tin nhắn
+            </button>
+            <button
+              onClick={() => setViewMode("groups")}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                viewMode === "groups"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" /> Nhóm học
+            </button>
           </div>
+        </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
-            {loading ? (
-              <div className="text-center py-10">
-                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="text-center py-10 text-xs text-muted-foreground">
-                Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!
+        {viewMode === "direct" ? (
+          <div className="flex-1 overflow-y-auto">
+            {matches.length === 0 ? (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                Chưa có cuộc trò chuyện nào
               </div>
             ) : (
-              messages.map((msg) => {
-                // FIX 3: Thêm dấu ? để bảo vệ msg.sender
-                const isMine =
-                  msg.sender._id === user?.id || msg.sender._id === user?._id;
+              matches.map((match) => {
+                const other = getOther(match);
+                const isSelected = selectedMatch?._id === match._id;
+                if (!other) return null;
 
                 return (
-                  <div
-                    key={msg._id}
-                    className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
+                  <button
+                    key={match._id}
+                    onClick={() => setSelectedMatch(match)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left ${
+                      isSelected ? "bg-secondary border-r-2 border-primary" : ""
+                    }`}
                   >
-                    {!isMine && (
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700 shrink-0">
-                        {initials(msg.sender?.username)}
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[65%] px-3 py-2 rounded-2xl text-sm ${
-                        isMine
-                          ? "bg-primary text-white rounded-br-sm"
-                          : "bg-secondary text-foreground rounded-bl-sm"
-                      }`}
-                    >
-                      {msg.content}
-                      <p
-                        className={`text-[10px] mt-1 ${isMine ? "text-white/60" : "text-muted-foreground"}`}
-                      >
-                        {formatTime(msg.createdAt)}
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700 shrink-0">
+                      {initials(other.username)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {other.username || "Người dùng ẩn"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Nhấn để xem tin nhắn
                       </p>
                     </div>
-                  </div>
+                    {badgeCount(unreadCounts[match._id])}
+                  </button>
                 );
               })
             )}
-            <div ref={bottomRef} />
           </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="p-3">
+              <button
+                onClick={() => setShowCreateGroup(true)}
+                disabled={matchPartners.length === 0}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <UserPlus className="w-3.5 h-3.5" /> Tạo buổi học nhóm
+              </button>
+            </div>
+            {groups.length === 0 ? (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                Chưa có nhóm học nào
+              </div>
+            ) : (
+              groups.map((group) => {
+                const isSelected = selectedGroup?._id === group._id;
+                const myStatus = myMemberStatus(group);
+                if (!isGroupTeacher(group) && myStatus !== "accepted")
+                  return null;
 
-          {/* Input */}
-          <form
-            onSubmit={sendMessage}
-            className="px-5 py-3 border-t border-border flex items-center gap-3"
-          >
-            <input
-              type="text"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Nhập tin nhắn..."
-              className="flex-1 h-10 px-4 rounded-full bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground"
-            />
-            <button
-              type="submit"
-              disabled={!content.trim()}
-              className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                return (
+                  <button
+                    key={group._id}
+                    onClick={() => setSelectedGroup(group)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left ${
+                      isSelected ? "bg-secondary border-r-2 border-primary" : ""
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-xs font-medium text-purple-700 shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {group.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isGroupTeacher(group)
+                          ? `Bạn là giáo viên · ${acceptedMembers(group).length} học viên`
+                          : `GV: ${group.teacher.username}`}
+                      </p>
+                    </div>
+                    {badgeCount(unreadCounts[`group_${group._id}`])}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Khu vực chat 1-1 ── */}
+      {viewMode === "direct" &&
+        (selectedMatch && getOther(selectedMatch) ? (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
+                  {initials(getOther(selectedMatch)?.username)}
+                </div>
+                <span className="text-sm font-medium">
+                  {getOther(selectedMatch)?.username || "Người dùng ẩn"}
+                </span>
+              </div>
+
+              <button
+                onClick={startCall}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Video className="w-3.5 h-3.5" /> Bắt đầu gọi video
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+              {loading ? (
+                <div className="text-center py-10">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-center py-10 text-xs text-muted-foreground">
+                  Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isMine = msg.sender._id === userId;
+                  return (
+                    <div
+                      key={msg._id}
+                      className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
+                    >
+                      {!isMine && (
+                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700 shrink-0">
+                          {initials(msg.sender?.username)}
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[65%] px-3 py-2 rounded-2xl text-sm ${
+                          isMine
+                            ? "bg-primary text-white rounded-br-sm"
+                            : "bg-secondary text-foreground rounded-bl-sm"
+                        }`}
+                      >
+                        {msg.content}
+                        <p
+                          className={`text-[10px] mt-1 ${isMine ? "text-white/60" : "text-muted-foreground"}`}
+                        >
+                          {formatTime(msg.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            <form
+              onSubmit={sendMessage}
+              className="px-5 py-3 border-t border-border flex items-center gap-3"
             >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
+              <input
+                type="text"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Nhập tin nhắn..."
+                className="flex-1 h-10 px-4 rounded-full bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="submit"
+                disabled={!content.trim()}
+                className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
+            <MessageSquare className="w-10 h-10 opacity-30" />
+            <p className="text-sm">Chọn một cuộc trò chuyện để bắt đầu</p>
+          </div>
+        ))}
+
+      {/* ── Khu vực nhóm học ── */}
+      {viewMode === "groups" &&
+        (selectedGroup ? (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">{selectedGroup.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {acceptedMembers(selectedGroup).length} thành viên đã tham gia
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={startGroupCall}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Video className="w-3.5 h-3.5" /> Vào phòng học
+                </button>
+                {isGroupTeacher(selectedGroup) && (
+                  <button
+                    onClick={closeGroup}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-border text-xs font-medium rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Kết thúc
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+              {groupLoading ? (
+                <div className="text-center py-10">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                </div>
+              ) : groupMessages.length === 0 ? (
+                <div className="text-center py-10 text-xs text-muted-foreground">
+                  Chưa có tin nhắn nào trong nhóm này
+                </div>
+              ) : (
+                groupMessages.map((msg) => {
+                  const isMine = msg.sender._id === userId;
+                  return (
+                    <div
+                      key={msg._id}
+                      className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
+                    >
+                      {!isMine && (
+                        <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-[10px] font-medium text-purple-700 shrink-0">
+                          {initials(msg.sender?.username)}
+                        </div>
+                      )}
+                      <div className="max-w-[65%]">
+                        {!isMine && (
+                          <p className="text-[10px] text-muted-foreground mb-0.5 px-1">
+                            {msg.sender?.username}
+                          </p>
+                        )}
+                        <div
+                          className={`px-3 py-2 rounded-2xl text-sm ${
+                            isMine
+                              ? "bg-primary text-white rounded-br-sm"
+                              : "bg-secondary text-foreground rounded-bl-sm"
+                          }`}
+                        >
+                          {msg.content}
+                          <p
+                            className={`text-[10px] mt-1 ${isMine ? "text-white/60" : "text-muted-foreground"}`}
+                          >
+                            {formatTime(msg.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={groupBottomRef} />
+            </div>
+
+            <form
+              onSubmit={sendGroupMessage}
+              className="px-5 py-3 border-t border-border flex items-center gap-3"
+            >
+              <input
+                type="text"
+                value={groupContent}
+                onChange={(e) => setGroupContent(e.target.value)}
+                placeholder="Nhập tin nhắn cho cả nhóm..."
+                className="flex-1 h-10 px-4 rounded-full bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                type="submit"
+                disabled={!groupContent.trim()}
+                className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
+            <Users className="w-10 h-10 opacity-30" />
+            <p className="text-sm">Chọn 1 nhóm học hoặc tạo nhóm mới</p>
+          </div>
+        ))}
+
+      {/* ── Popup báo có cuộc gọi 1-1 đến ── */}
+      {incomingCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Video className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="text-base font-semibold mb-1">
+              {incomingCall.callerName} đang gọi video...
+            </h3>
+            <p className="text-xs text-muted-foreground mb-6">
+              Cuộc gọi qua Jitsi Meet
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={declineIncomingCall}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-border text-sm font-medium rounded-xl hover:bg-secondary transition-colors"
+              >
+                <PhoneOff className="w-4 h-4" /> Từ chối
+              </button>
+              <button
+                onClick={acceptIncomingCall}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors"
+              >
+                <Video className="w-4 h-4" /> Tham gia
+              </button>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
-          <MessageSquare className="w-10 h-10 opacity-30" />
-          <p className="text-sm">Chọn một cuộc trò chuyện để bắt đầu</p>
+      )}
+
+      {/* ── Popup lời mời vào nhóm học ── */}
+      {groupInvite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
+              <Users className="w-7 h-7 text-purple-500" />
+            </div>
+            <h3 className="text-base font-semibold mb-1">
+              {groupInvite.teacherName} mời bạn vào buổi học nhóm
+            </h3>
+            <p className="text-xs text-muted-foreground mb-6">
+              "{groupInvite.title}"
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => respondGroupInvite(false)}
+                className="flex-1 py-2.5 border border-border text-sm font-medium rounded-xl hover:bg-secondary transition-colors"
+              >
+                Từ chối
+              </button>
+              <button
+                onClick={() => respondGroupInvite(true)}
+                className="flex-1 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors"
+              >
+                Tham gia
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* ── Modal tạo nhóm ── */}
+      {showCreateGroup && (
+        <CreateGroupModal
+          students={matchPartners}
+          token={token}
+          onClose={() => setShowCreateGroup(false)}
+          onCreated={fetchGroups}
+        />
+      )}
+
+      {/* ── Cửa sổ cuộc gọi video ── */}
+      {activeCallRoom && (
+        <JitsiMeeting
+          roomName={activeCallRoom}
+          displayName={user?.username || "Người dùng"}
+          onClose={() => setActiveCallRoom(null)}
+        />
       )}
     </div>
   );
