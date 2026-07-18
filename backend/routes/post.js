@@ -38,36 +38,45 @@ router.get("/", async (req, res) => {
   }
 });
 
-// routes/post.js
-router.get("/", async (req, res) => {
+// 2. LẤY CHI TIẾT MỘT BÀI ĐĂNG (API BẠN ĐANG THIẾU)
+router.get("/:postId", async (req, res) => {
   try {
-    // Tạo một object filter và luôn bắt buộc bài viết phải có status là "active"
-    const filter = { status: "active" };
+    const post = await Post.findById(req.params.postId).populate(
+      "author",
+      "username avatar stats",
+    );
 
-    // Nếu có các tham số tìm kiếm từ Frontend gửi lên thì ghép thêm vào
-    if (req.query.type) filter.type = req.query.type;
-    if (req.query.field) filter["skill.field"] = req.query.field;
-    if (req.query.level) filter["skill.level"] = req.query.level;
-    if (req.query.skill) {
-      filter["skill.name"] = { $regex: req.query.skill, $options: "i" };
+    if (!post) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy bài đăng" });
     }
 
-    const posts = await Post.find(filter)
-      .populate("author", "username avatar")
-      .sort({ createdAt: -1 });
-
-    res.json({ success: true, posts });
+    res.json({ success: true, post });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Lỗi lấy bài viết" });
+    res
+      .status(500)
+      .json({ success: false, message: "Lỗi lấy chi tiết bài viết" });
   }
 });
 
-// 3. Tạo bài đăng mới (Dành cho CreatePostPage)
+// Lấy toàn bộ bài đăng của chính mình (để quản lý cả bài đã đóng)
+router.get("/my-posts", authMiddleware, async (req, res) => {
+  try {
+    const posts = await Post.find({ author: req.user.id }).sort({
+      createdAt: -1,
+    });
+    res.json({ success: true, posts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi lấy bài của bạn" });
+  }
+});
+
+// 3. Tạo bài đăng mới
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const { type, title, description, skill } = req.body;
 
-    // Validation: Chặn nếu thiếu dữ liệu quan trọng
     if (
       !type ||
       !title ||
@@ -106,7 +115,6 @@ router.put("/:postId/close", authMiddleware, async (req, res) => {
         .json({ success: false, message: "Không tìm thấy bài đăng" });
     }
 
-    // Kiểm tra quyền: Chỉ chủ bài viết mới được đóng/mở
     if (post.author.toString() !== req.user.id) {
       return res
         .status(403)
@@ -136,7 +144,6 @@ router.delete("/:postId", authMiddleware, async (req, res) => {
         .json({ success: false, message: "Không tìm thấy bài đăng" });
     }
 
-    // Kiểm tra quyền: Chỉ chủ bài viết mới được xóa
     if (post.author.toString() !== req.user.id) {
       return res
         .status(403)

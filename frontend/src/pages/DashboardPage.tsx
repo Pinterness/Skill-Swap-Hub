@@ -1,8 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
-import { ArrowRight, BookOpen, Star, Users, X, Send } from "lucide-react";
+import {
+  BookOpen,
+  Star,
+  Users,
+  X,
+  Send,
+  Compass,
+  FolderKanban,
+  MoreHorizontal,
+  Trash2,
+  EyeOff,
+  Eye,
+  PlusCircle,
+} from "lucide-react";
 
 const API = "http://localhost:5000/api";
 
@@ -10,29 +23,36 @@ interface Post {
   _id: string;
   title: string;
   description: string;
-  skillsRequired: string[];
-  skillsOffered: string[];
   type?: "learning" | "teaching";
-  skill?: {
-    name: string;
-    field: string;
-    level: string;
-  };
+  skill?: { name: string; field: string; level: string };
   author: { _id: string; username: string; avatar?: string };
   createdAt: string;
+  status?: string; // Thêm status để biết bài đang đóng hay mở
 }
 
 export default function DashboardPage() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [posts, setPosts] = useState<Post[]>([]);
+
+  // States dữ liệu
+  const [discoverPosts, setDiscoverPosts] = useState<Post[]>([]);
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // States UI & Tab
+  const [activeTab, setActiveTab] = useState<"discover" | "my-posts">(
+    "discover",
+  );
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // States Filter (Chỉ cho tab Discover)
   const [query, setQuery] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterField, setFilterField] = useState("");
   const [filterLevel, setFilterLevel] = useState("");
 
-  // States cho Modal gửi lời mời nhanh ngay trên trang chủ
+  // States Modal gửi lời mời
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [matchMessage, setMatchMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -55,10 +75,30 @@ export default function DashboardPage() {
     friends: user?.friends?.length || 0,
   });
 
+  // Xử lý đóng menu 3 chấm khi click ra ngoài
   useEffect(() => {
-    fetchPosts();
-    fetchLiveStats();
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch dữ liệu khi khởi chạy hoặc chuyển tab
+  useEffect(() => {
+    fetchLiveStats();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (activeTab === "discover") {
+      fetchDiscoverPosts();
+    } else {
+      fetchMyPosts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const fetchLiveStats = async () => {
     if (!user?.id) return;
@@ -72,15 +112,35 @@ export default function DashboardPage() {
         });
       }
     } catch (error) {
-      console.error("Lỗi lấy thống kê realtime:", error);
+      console.error("Lỗi lấy thống kê:", error);
     }
   };
 
-  const fetchPosts = async (params = {}) => {
+  // Lấy bài đăng của người khác (Khám phá)
+  const fetchDiscoverPosts = async (params = {}) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/post`, { params });
-      setPosts(res.data.posts);
+      // Lọc bỏ bài của chính user hiện tại cho đỡ rác
+      const filtered = res.data.posts.filter(
+        (p: Post) => p.author._id !== user?.id && p.author._id !== user?._id,
+      );
+      setDiscoverPosts(filtered);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lấy TOÀN BỘ bài đăng của chính mình (cả active & closed)
+  const fetchMyPosts = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API}/post/my-posts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMyPosts(res.data.posts);
     } catch (error) {
       console.error(error);
     } finally {
@@ -90,7 +150,7 @@ export default function DashboardPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchPosts({
+    fetchDiscoverPosts({
       skill: query,
       type: filterType,
       field: filterField,
@@ -98,7 +158,6 @@ export default function DashboardPage() {
     });
   };
 
-  // Hàm xử lý gửi lời mời
   const handleSendMatch = async () => {
     if (!matchMessage.trim() || !selectedPost)
       return alert("Vui lòng nhập lời nhắn");
@@ -108,7 +167,7 @@ export default function DashboardPage() {
         `${API}/match/send`,
         {
           receiverId: selectedPost.author._id,
-          postId: selectedPost._id, // Truyền postId để Backend biết tự động đóng bài
+          postId: selectedPost._id,
           message: matchMessage,
         },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -123,233 +182,393 @@ export default function DashboardPage() {
     }
   };
 
+  // --- HÀNH ĐỘNG CHO TAB "BÀI CỦA TÔI" ---
+  const handleDeletePost = async (e: React.MouseEvent, postId: string) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    if (
+      !window.confirm(
+        "Bạn chắc chắn muốn xóa bài đăng này? Hành động không thể hoàn tác.",
+      )
+    )
+      return;
+    try {
+      await axios.delete(`${API}/post/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMyPosts(myPosts.filter((p) => p._id !== postId));
+      alert("Đã xóa bài đăng");
+    } catch (error) {
+      alert("Lỗi khi xóa bài");
+    }
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, post: Post) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    try {
+      await axios.put(
+        `${API}/post/${post._id}/close`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      // Refresh lại danh sách bài của tôi để cập nhật trạng thái mới nhất
+      fetchMyPosts();
+      alert(
+        `Đã ${post.status === "active" ? "ẩn" : "mở lại"} bài đăng thành công!`,
+      );
+    } catch (error) {
+      alert("Lỗi hệ thống");
+    }
+  };
+
   const initials = (name: string) =>
     name ? name.slice(0, 2).toUpperCase() : "U";
 
+  // Dữ liệu hiển thị dựa trên Tab
+  const displayedPosts = activeTab === "discover" ? discoverPosts : myPosts;
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Metric cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-secondary rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="w-4 h-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Buổi dạy</span>
+      {/* Header & Metric cards */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground mb-1">
+          Xin chào, {user?.username}
+        </h1>
+        <p className="text-muted-foreground text-sm mb-6">
+          Hôm nay bạn muốn trao đổi và học hỏi thêm kỹ năng gì?
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                Buổi dạy
+              </span>
+            </div>
+            <p className="text-2xl font-bold">{liveData.taught}</p>
           </div>
-          {/* ĐÃ SỬA: Sử dụng liveData */}
-          <p className="text-2xl font-semibold">{liveData.taught}</p>
-        </div>
-        <div className="bg-secondary rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Star className="w-4 h-4 text-yellow-400" />
-            <span className="text-xs text-muted-foreground">Đánh giá TB</span>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg">
+                <Star className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                Đánh giá TB
+              </span>
+            </div>
+            <p className="text-2xl font-bold">{liveData.rating || "—"}</p>
           </div>
-          {/* ĐÃ SỬA: Sử dụng liveData */}
-          <p className="text-2xl font-semibold">{liveData.rating || "—"}</p>
-        </div>
-        <div className="bg-secondary rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4 text-blue-400" />
-            <span className="text-xs text-muted-foreground">Kết nối</span>
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                <Users className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                Kết nối
+              </span>
+            </div>
+            <p className="text-2xl font-bold">{liveData.friends}</p>
           </div>
-          {/* ĐÃ SỬA: Sử dụng liveData */}
-          <p className="text-2xl font-semibold">{liveData.friends}</p>
         </div>
       </div>
 
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Tìm kiếm kỹ năng..."
-          className="flex-1 h-10 px-4 rounded-lg bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground"
-        />
+      {/* TABS NAVIGATION */}
+      <div className="flex border-b border-border mb-6">
         <button
-          type="submit"
-          className="px-4 h-10 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
+          onClick={() => setActiveTab("discover")}
+          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors relative ${
+            activeTab === "discover"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          Tìm
+          <Compass className="w-4 h-4" /> Khám phá
+          {activeTab === "discover" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+          )}
         </button>
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              fetchPosts({
-                type: filterType,
-                field: filterField,
-                level: filterLevel,
-              });
-            }}
-            className="px-4 h-10 border border-border text-sm rounded-lg hover:bg-secondary transition-colors cursor-pointer"
-          >
-            Xóa
-          </button>
-        )}
-      </form>
+        <button
+          onClick={() => setActiveTab("my-posts")}
+          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors relative ${
+            activeTab === "my-posts"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <FolderKanban className="w-4 h-4" /> Bài của tôi
+          {activeTab === "my-posts" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+          )}
+        </button>
+      </div>
 
-      {/* Filter bar */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <div className="flex gap-1 p-1 bg-secondary rounded-xl">
-          {[
-            { v: "", l: "Tất cả" },
-            { v: "learning", l: "🎓 học" },
-            { v: "teaching", l: "📚 dạy" },
-          ].map((opt) => (
+      {/* Thanh công cụ tìm kiếm - Chỉ hiện ở tab Khám phá */}
+      {activeTab === "discover" && (
+        <div className="mb-8 space-y-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tìm kiếm kỹ năng bạn muốn học hoặc dạy..."
+              className="flex-1 h-11 px-4 rounded-xl bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm shadow-sm"
+            />
             <button
-              key={opt.v}
-              onClick={() => {
-                setFilterType(opt.v);
-                fetchPosts({
+              type="submit"
+              className="px-6 h-11 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              Tìm kiếm
+            </button>
+            {query && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  fetchDiscoverPosts({
+                    type: filterType,
+                    field: filterField,
+                    level: filterLevel,
+                  });
+                }}
+                className="px-4 h-11 border border-border text-sm font-medium rounded-xl hover:bg-secondary transition-colors"
+              >
+                Xóa
+              </button>
+            )}
+          </form>
+
+          <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1 p-1 bg-card border border-border rounded-xl shadow-sm">
+              {[
+                { v: "", l: "Tất cả" },
+                { v: "learning", l: "🎓 Tìm người dạy" },
+                { v: "teaching", l: "📚 Mở lớp dạy" },
+              ].map((opt) => (
+                <button
+                  key={opt.v}
+                  onClick={() => {
+                    setFilterType(opt.v);
+                    fetchDiscoverPosts({
+                      skill: query,
+                      type: opt.v,
+                      field: filterField,
+                      level: filterLevel,
+                    });
+                  }}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    filterType === opt.v
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.l}
+                </button>
+              ))}
+            </div>
+            <select
+              value={filterField}
+              onChange={(e) => {
+                setFilterField(e.target.value);
+                fetchDiscoverPosts({
                   skill: query,
-                  type: opt.v,
-                  field: filterField,
+                  type: filterType,
+                  field: e.target.value,
                   level: filterLevel,
                 });
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                filterType === opt.v
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="h-9 px-3 rounded-xl bg-card border border-border text-xs text-foreground outline-none focus:border-primary shadow-sm"
             >
-              {opt.l}
-            </button>
-          ))}
+              <option value="">Tất cả lĩnh vực</option>
+              {FIELDS.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterLevel}
+              onChange={(e) => {
+                setFilterLevel(e.target.value);
+                fetchDiscoverPosts({
+                  skill: query,
+                  type: filterType,
+                  field: filterField,
+                  level: e.target.value,
+                });
+              }}
+              className="h-9 px-3 rounded-xl bg-card border border-border text-xs text-foreground outline-none focus:border-primary shadow-sm"
+            >
+              <option value="">Tất cả cấp độ</option>
+              {LEVELS.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+      )}
 
-        <select
-          value={filterField}
-          onChange={(e) => {
-            setFilterField(e.target.value);
-            fetchPosts({
-              skill: query,
-              type: filterType,
-              field: e.target.value,
-              level: filterLevel,
-            });
-          }}
-          className="h-9 px-3 rounded-xl bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary cursor-pointer"
-        >
-          <option value="">Tất cả lĩnh vực</option>
-          {FIELDS.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-        </select>
+      {/* Nút đăng bài mới nhanh cho Tab My Posts */}
+      {activeTab === "my-posts" && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => navigate("/dashboard/post/create")}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors text-sm"
+          >
+            <PlusCircle className="w-4 h-4" /> Đăng bài mới
+          </button>
+        </div>
+      )}
 
-        <select
-          value={filterLevel}
-          onChange={(e) => {
-            setFilterLevel(e.target.value);
-            fetchPosts({
-              skill: query,
-              type: filterType,
-              field: filterField,
-              level: e.target.value,
-            });
-          }}
-          className="h-9 px-3 rounded-xl bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary cursor-pointer"
-        >
-          <option value="">Tất cả cấp độ</option>
-          {LEVELS.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
-        Bài đăng mới nhất
-      </h2>
-
+      {/* DANH SÁCH BÀI ĐĂNG */}
       {loading ? (
         <div className="text-center py-20">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Đang tải...</p>
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground font-medium">
+            Đang tải dữ liệu...
+          </p>
         </div>
-      ) : posts.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-border rounded-2xl">
-          <p className="text-muted-foreground text-sm">Chưa có bài đăng nào</p>
+      ) : displayedPosts.length === 0 ? (
+        <div className="text-center py-20 border-2 border-dashed border-border rounded-2xl bg-secondary/20">
+          <FolderKanban className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            Chưa có bài đăng nào
+          </h3>
+          <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
+            {activeTab === "discover"
+              ? "Hiện tại chưa có ai đăng bài trong mục này. Hãy thử thay đổi bộ lọc tìm kiếm nhé."
+              : "Bạn chưa tạo bài đăng nào. Hãy chia sẻ kỹ năng của bạn để kết nối với mọi người ngay thôi!"}
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {posts.map((post) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {displayedPosts.map((post) => (
             <div
               key={post._id}
-              onClick={() => navigate(`/dashboard/post/${post._id}`)} // Bấm vào thẻ -> Xem chi tiết bài
-              className="bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors cursor-pointer group flex flex-col h-full"
+              onClick={() => navigate(`/dashboard/post/${post._id}`)}
+              className={`relative bg-card border rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer group flex flex-col h-full ${
+                post.type === "learning"
+                  ? "border-blue-100"
+                  : "border-green-100"
+              } ${post.status === "closed" ? "opacity-60 grayscale hover:grayscale-0" : ""}`}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-medium text-green-700">
+              {/* Header của thẻ */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                   {initials(post.author?.username)}
                 </div>
-                <span
-                  className="text-xs font-medium cursor-pointer hover:text-primary transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Ngăn mở chi tiết bài
-                    navigate(`/dashboard/user/${post.author._id}`); // Bấm vào tên -> Xem Profile
-                  }}
-                >
-                  {post.author?.username || "Ẩn danh"}
-                </span>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {new Date(post.createdAt).toLocaleDateString("vi-VN")}
-                </span>
+                <div className="flex-1">
+                  <h4
+                    className="text-sm font-semibold hover:text-primary transition-colors line-clamp-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/dashboard/user/${post.author._id}`);
+                    }}
+                  >
+                    {post.author?.username || "Ẩn danh"}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(post.createdAt).toLocaleDateString("vi-VN")}
+                    </p>
+                    {/* Badge trạng thái bài đăng */}
+                    {activeTab === "my-posts" && (
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wide ${
+                          post.status === "active"
+                            ? "bg-green-100 text-green-600"
+                            : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {post.status === "active" ? "Đang hiện" : "Đang ẩn"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Nút 3 chấm thao tác nhanh (Chỉ có ở Bài của tôi) */}
+                {activeTab === "my-posts" && (
+                  <div
+                    className="relative"
+                    ref={openMenuId === post._id ? menuRef : null}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(
+                          openMenuId === post._id ? null : post._id,
+                        );
+                      }}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                    >
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+
+                    {openMenuId === post._id && (
+                      <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border shadow-xl rounded-xl py-1 z-20 animate-in fade-in zoom-in-95">
+                        <button
+                          onClick={(e) => handleToggleStatus(e, post)}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                        >
+                          {post.status === "active" ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                          {post.status === "active"
+                            ? "Ẩn bài đăng"
+                            : "Mở lại bài"}
+                        </button>
+                        <button
+                          onClick={(e) => handleDeletePost(e, post._id)}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" /> Xóa bài
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <h3 className="text-sm font-medium mb-1 group-hover:text-primary transition-colors">
+
+              <h3 className="text-base font-bold mb-2 group-hover:text-primary transition-colors line-clamp-1">
                 {post.title}
               </h3>
-              <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
                 {post.description}
               </p>
 
-              <div className="flex flex-wrap gap-1.5 mb-auto">
-                {post.type && (
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                      post.type === "learning"
-                        ? "bg-blue-50 text-blue-700 border-blue-100"
-                        : "bg-green-50 text-green-700 border-green-100"
-                    }`}
-                  >
-                    {post.type === "learning" ? "🎓 Tìm học" : "📚 Dạy"}
-                  </span>
-                )}
-
-                {post.skill?.field && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
-                    {post.skill.field}
-                  </span>
-                )}
-
-                {post.skill?.level && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
-                    {post.skill.level}
-                  </span>
-                )}
-
-                {post.skill?.name && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
-                    {post.skill.name}
-                  </span>
-                )}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span
+                  className={`text-[11px] px-2.5 py-1 rounded-md font-semibold ${
+                    post.type === "learning"
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-green-50 text-green-700"
+                  }`}
+                >
+                  {post.type === "learning" ? "🎓 Tìm học" : "📚 Nhận dạy"}
+                </span>
+                <span className="text-[11px] px-2.5 py-1 rounded-md bg-secondary text-muted-foreground font-medium">
+                  {post.skill?.field} • {post.skill?.level}
+                </span>
               </div>
 
-              {/* NÚT GỬI LỜI MỜI */}
-              {user?.id !== post.author._id && ( // Ẩn nút gửi lời mời nếu tự xem bài của mình
-                <div className="pt-4 mt-3 border-t border-border">
+              {/* Nút gửi lời mời (Chỉ hiện ở Tab Khám phá) */}
+              {activeTab === "discover" && (
+                <div className="pt-4 border-t border-border/50 mt-auto">
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Ngăn mở chi tiết bài
-                      setSelectedPost(post); // Mở Modal gửi lời mời
+                      e.stopPropagation();
+                      setSelectedPost(post);
                     }}
-                    className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors w-fit"
+                    className="w-full py-2.5 bg-primary/10 text-primary text-sm font-semibold rounded-xl hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
                   >
-                    <Send className="w-3.5 h-3.5" /> Gửi lời mời
+                    <Send className="w-4 h-4" /> Gửi lời mời kết nối
                   </button>
                 </div>
               )}
@@ -358,39 +577,46 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal gửi lời mời trực tiếp trên trang chủ */}
+      {/* Modal gửi lời mời */}
       {selectedPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold">Gửi lời mời kết nối</h3>
-              <button onClick={() => setSelectedPost(null)}>
-                <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+              <h3 className="text-lg font-bold">Gửi lời mời kết nối</h3>
+              <button
+                onClick={() => setSelectedPost(null)}
+                className="p-1 rounded-full hover:bg-secondary"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Gửi lời mời đến <strong>{selectedPost.author.username}</strong> về
-              bài đăng:{" "}
-              <span className="font-medium">"{selectedPost.title}"</span>.
+              Gửi một lời nhắn tới{" "}
+              <strong>{selectedPost.author.username}</strong> về bài đăng{" "}
+              <span className="font-medium text-foreground">
+                "{selectedPost.title}"
+              </span>
+              .
             </p>
             <textarea
               value={matchMessage}
               onChange={(e) => setMatchMessage(e.target.value)}
-              placeholder="VD: Mình rất muốn học kỹ năng này của bạn..."
+              placeholder="VD: Chào bạn, mình rất muốn học kỹ năng này..."
               rows={4}
-              className="w-full px-4 py-3 rounded-xl bg-secondary border border-border outline-none text-sm mb-4"
+              className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border focus:border-primary outline-none text-sm mb-4 resize-none"
+              autoFocus
             />
             <div className="flex gap-3">
               <button
                 onClick={handleSendMatch}
                 disabled={sending}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 disabled:opacity-60 transition-all"
               >
                 {sending ? "Đang gửi..." : "Xác nhận gửi"}
               </button>
               <button
                 onClick={() => setSelectedPost(null)}
-                className="px-4 py-2.5 border border-border text-sm rounded-xl hover:bg-secondary text-muted-foreground"
+                className="px-6 py-2.5 border border-border text-sm font-medium rounded-xl hover:bg-secondary text-muted-foreground transition-colors"
               >
                 Hủy
               </button>
