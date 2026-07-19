@@ -6,6 +6,13 @@ import PostGrid from '../components/feed/PostGrid';
 import AuthForm from '../components/auth/AuthForm';
 import { Post } from '../types';
 
+// ── IMPORT CÁC COMPONENT MỚI ──
+import FloatingSkillChips from '../components/FloatingSkillChips';
+import SwapCards from '../components/Swapcards';
+import HowItWorks from '../components/Howitworks';
+import FeaturedUsers from '../components/Featuredusers';
+import Footer from '../components/Footer';
+
 export default function LandingPage() {
     const [query, setQuery] = useState('');
     const [showAuth, setShowAuth] = useState(false);
@@ -54,7 +61,7 @@ export default function LandingPage() {
             <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-accent/20 blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
 
-            {/* Navbar được đóng đinh (Sticky) */}
+            {/* ── NAVBAR ── */}
             <div className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
                 <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
@@ -85,85 +92,116 @@ export default function LandingPage() {
                 </nav>
             </div>
 
-            {/* Hero */}
-            <main className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 text-center max-w-4xl mx-auto py-12">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8 shadow-sm"
-                >
-                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-sm text-secondary-foreground tracking-tight font-['DM_Mono']">
-                        Cộng đồng 10.000+ thành viên
-                    </span>
-                </motion.div>
+            {/* ── HERO SECTION ── */}
+            <main className="relative z-10 flex items-center min-h-[calc(100vh-100px)] py-12 px-4">
+                {/* Background animation: Chip bay lơ lửng và né chuột */}
+                <FloatingSkillChips />
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
-                >
-                    <h1 className="text-5xl md:text-7xl font-extrabold font-['Outfit'] leading-[1.1] mb-6">
-                        Trao đổi kỹ năng <br />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                            Kết nối tri thức
-                        </span>
-                    </h1>
-                </motion.div>
+                <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    
+                    {/* Cột Trái: Chữ và Tìm kiếm */}
+                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8 shadow-sm"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                            <span className="text-sm text-secondary-foreground tracking-tight font-['DM_Mono']">
+                                Cộng đồng 10.000+ thành viên
+                            </span>
+                        </motion.div>
 
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
-                    className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed"
-                >
-                    Nền tảng chia sẻ kỹ năng thực tế. Bạn có chuyên môn, người khác đang cần.
-                    Hãy kết nối, học hỏi chéo và cùng nhau phát triển không giới hạn.
-                </motion.p>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+                        >
+                            <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold font-['Outfit'] leading-[1.1] mb-6">
+                                Trao đổi kỹ năng <br />
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                                    Kết nối tri thức
+                                </span>
+                            </h1>
+                        </motion.div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
-                    className="w-full max-w-2xl relative flex items-center group"
-                >
-                    <div className="absolute left-5 text-muted-foreground group-focus-within:text-primary transition-colors">
-                        <Search className="w-6 h-6" />
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+                            className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl leading-relaxed"
+                        >
+                            Nền tảng chia sẻ kỹ năng thực tế. Bạn có chuyên môn, người khác đang cần.
+                            Hãy kết nối, học hỏi chéo và cùng nhau phát triển không giới hạn.
+                        </motion.p>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
+                            className="w-full max-w-xl relative flex items-center group"
+                        >
+                            <div className="absolute left-5 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                <Search className="w-6 h-6" />
+                            </div>
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Kỹ năng bạn muốn học? (VD: ReactJS)"
+                                className="w-full h-16 pl-14 pr-36 rounded-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-foreground text-base placeholder:text-muted-foreground/50 shadow-xl"
+                            />
+                            <button className="absolute right-2 top-2 bottom-2 px-6 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer">
+                                Tìm
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.5 }}
+                            className="mt-10 flex flex-wrap justify-center lg:justify-start items-center gap-3"
+                        >
+                            <span className="text-sm text-muted-foreground mr-2 font-['DM_Mono']">Nổi bật:</span>
+                            {['UI/UX Design', 'Giao tiếp tiếng Anh', 'Node.js', 'Figma'].map((skill) => (
+                                <span key={skill}
+                                    className="px-4 py-1.5 rounded-full text-sm font-['DM_Mono'] bg-secondary/40 border border-border hover:border-primary/50 hover:text-primary transition-colors cursor-pointer text-muted-foreground">
+                                    {skill}
+                                </span>
+                            ))}
+                        </motion.div>
                     </div>
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Bạn muốn học kỹ năng gì? (VD: ReactJS, Tiếng Anh...)"
-                        className="w-full h-16 pl-14 pr-40 rounded-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-foreground text-base placeholder:text-muted-foreground/50 shadow-xl"
-                    />
-                    <button className="absolute right-2 top-2 bottom-2 px-6 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer">
-                        Tìm ngay
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
-                </motion.div>
 
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                    className="mt-10 flex flex-wrap justify-center items-center gap-3"
-                >
-                    <span className="text-sm text-muted-foreground mr-2 font-['DM_Mono']">Nổi bật:</span>
-                    {['UI/UX Design', 'Giao tiếp tiếng Anh', 'Node.js', 'Figma'].map((skill) => (
-                        <span key={skill}
-                            className="px-4 py-1.5 rounded-full text-sm font-['DM_Mono'] bg-secondary/40 border border-border hover:border-primary/50 hover:text-primary transition-colors cursor-pointer text-muted-foreground">
-                            {skill}
-                        </span>
-                    ))}
-                </motion.div>
+                    {/* Cột Phải: Thẻ hoán đổi */}
+                    <div className="hidden lg:block relative w-full">
+                        <SwapCards />
+                    </div>
+                </div>
             </main>
 
-            {/* Post Grid */}
-            <PostGrid posts={dummyPosts} />
+            {/* ── BÀI ĐĂNG GẦN ĐÂY ── */}
+            <section className="relative z-10 py-16 px-4 max-w-7xl mx-auto border-t border-border/50">
+                <div className="text-center md:text-left mb-10">
+                    <h2 className="text-3xl font-bold text-foreground">Giao dịch kỹ năng mới nhất</h2>
+                    <p className="text-muted-foreground mt-2">Khám phá những nhu cầu học tập và giảng dạy vừa được đăng tải</p>
+                </div>
+                <PostGrid posts={dummyPosts} />
+            </section>
 
-            {/* Auth Modal */}
+            {/* ── CÁC SECTION MỚI TÍCH HỢP ── */}
+            <div className="relative z-10">
+                <HowItWorks />
+                <FeaturedUsers />
+            </div>
+
+            {/* ── FOOTER ── */}
+            <div className="relative z-10">
+                <Footer />
+            </div>
+
+            {/* ── AUTH MODAL ── */}
             {showAuth && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
                     <AuthForm
