@@ -37,9 +37,8 @@ export default function AuthForm({
         });
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
-        alert("Đăng nhập thành công!");
 
-        onSuccess?.(); // <-- CHỈ THÊM DÒNG NÀY ĐỂ CHUYỂN TRANG
+        onSuccess?.();
         onClose?.();
       } else {
         // Gọi API đăng ký
@@ -50,9 +49,8 @@ export default function AuthForm({
         );
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
-        alert("Đăng ký thành công!");
 
-        onSuccess?.(); // <-- CHỈ THÊM DÒNG NÀY ĐỂ CHUYỂN TRANG
+        onSuccess?.();
         onClose?.();
       }
     } catch (err: any) {
