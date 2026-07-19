@@ -1,8 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
 import { X, Users } from "lucide-react";
+import { API_URL } from "../lib/config";
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 interface SimpleUser {
   _id: string;

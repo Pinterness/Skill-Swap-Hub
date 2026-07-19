@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const User = require("../models/User");
 const authMiddleware = require("../middlewares/authMiddleware");
+const { getUploadBaseUrl } = require("../utils/uploadUrl");
 
 // ─── CẤU HÌNH MULTER (XỬ LÝ UPLOAD ẢNH) ───
 // Tạo thư mục "uploads" nếu chưa tồn tại
@@ -51,8 +52,8 @@ router.put(
   async (req, res) => {
     try {
       const updateData = {};
-      // Tạo đường dẫn cơ sở (VD: http://localhost:5000/uploads/)
-      const baseUrl = `${req.protocol}://${req.get("host")}/uploads/`;
+      // Deploy config: upload public URL is centralized and can use SERVER_URL.
+      const baseUrl = getUploadBaseUrl(req);
 
       if (req.files && req.files["avatar"]) {
         updateData.avatar = baseUrl + req.files["avatar"][0].filename;

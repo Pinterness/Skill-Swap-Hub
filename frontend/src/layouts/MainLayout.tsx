@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useChatNotifications } from "../context/ChatNotificationContext";
 import SettingsModal from "../components/SettingsModal";
+import { API_URL as BASE_API_URL } from "../lib/config";
 import {
   LayoutGrid,
   Users,
@@ -20,7 +21,8 @@ import {
 } from "lucide-react";
 
 // ĐÃ SỬA: khớp đúng với server.js (app.use("/api/notification", ...) - SỐ ÍT)
-const API_URL = "http://localhost:5000/api/notification";
+// Deploy config: notification API URL is derived from VITE_API_URL.
+const API_URL = `${BASE_API_URL}/notification`;
 
 export default function MainLayout({
   children,

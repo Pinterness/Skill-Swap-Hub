@@ -4,8 +4,10 @@ import axios from "axios";
 import { Star, ArrowLeft, MessageSquare } from "lucide-react";
 // 1. IMPORT THÊM useAuth
 import { useAuth } from "../hooks/useAuth";
+import { API_URL } from "../lib/config";
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 interface Review {
   _id: string;

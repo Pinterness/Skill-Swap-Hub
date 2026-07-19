@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
+import { API_URL } from "../lib/config";
 import {
   CheckCircle,
   XCircle,
@@ -22,7 +23,8 @@ interface Session {
   createdAt: string;
 }
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 export default function SessionPage() {
   const { token, user } = useAuth();

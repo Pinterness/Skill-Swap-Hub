@@ -20,10 +20,30 @@ const cron = require("node-cron");
 const path = require("path");
 
 const app = express();
+const allowedClientOrigins = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+// Deploy config: CORS origins come from CLIENT_URL; do not use wildcard origins.
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedClientOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+};
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
+  // Deploy config: socket.io uses the same CLIENT_URL allowlist as Express CORS.
+  cors: {
+    origin: allowedClientOrigins,
+    credentials: true,
+  },
 });
 
 app.set("io", io);
@@ -89,7 +109,7 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 //routes

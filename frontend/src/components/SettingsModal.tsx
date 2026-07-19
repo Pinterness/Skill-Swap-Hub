@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../context/ThemeContext";
+import { API_URL } from "../lib/config";
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 interface SettingsModalProps {
   onClose: () => void;

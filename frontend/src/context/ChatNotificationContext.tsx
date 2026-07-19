@@ -12,6 +12,7 @@ import { socket } from "../lib/socket";
 import { useAuth } from "../hooks/useAuth";
 import { Video, PhoneOff, Users } from "lucide-react";
 import JitsiMeeting from "../components/JitsiMeeting";
+import { API_URL } from "../lib/config";
 
 interface ToastItem {
   id: string;
@@ -46,7 +47,8 @@ export function useChatNotifications() {
   return ctx;
 }
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 function ToastCard({
   toast,

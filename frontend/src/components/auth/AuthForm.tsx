@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mail, Lock, User, ArrowRight, X, Loader2 } from "lucide-react";
 import axios from "axios";
+import { API_URL } from "../../lib/config";
 
 interface AuthFormProps {
   onClose?: () => void;
@@ -30,7 +31,8 @@ export default function AuthForm({
     try {
       if (isLogin) {
         // Gọi API đăng nhập
-        const res = await axios.post("http://localhost:5000/api/auth/login", {
+        // Deploy config: auth endpoint uses VITE_API_URL.
+        const res = await axios.post(`${API_URL}/auth/login`, {
           email,
           password,
         });
@@ -43,7 +45,8 @@ export default function AuthForm({
       } else {
         // Gọi API đăng ký
         const res = await axios.post(
-          "http://localhost:5000/api/auth/register",
+          // Deploy config: auth endpoint uses VITE_API_URL.
+          `${API_URL}/auth/register`,
           { username, email, password },
         );
         localStorage.setItem("token", res.data.token);

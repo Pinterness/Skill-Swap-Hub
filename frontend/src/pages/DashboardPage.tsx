@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
+import { API_URL } from "../lib/config";
 import {
   BookOpen,
   Star,
@@ -17,7 +18,8 @@ import {
   PlusCircle,
 } from "lucide-react";
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 interface Post {
   _id: string;

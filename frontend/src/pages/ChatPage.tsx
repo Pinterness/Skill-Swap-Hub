@@ -12,6 +12,7 @@ import {
 import { socket } from "../lib/socket";
 import CreateGroupModal from "../components/CreateGroupModal";
 import { useChatNotifications } from "../context/ChatNotificationContext";
+import { API_URL } from "../lib/config";
 
 interface SimpleUser {
   _id: string;
@@ -57,7 +58,8 @@ interface GroupMessage {
   groupId?: string;
 }
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 export default function ChatPage() {
   const { token, user } = useAuth();

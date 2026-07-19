@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"; // 1. Thêm useNavigate
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
 import { Check, X, RotateCcw, Clock, UserCheck } from "lucide-react";
+import { API_URL } from "../lib/config";
 
 interface Match {
   _id: string;
@@ -24,7 +25,8 @@ interface Match {
   createdAt: string;
 }
 
-const API = "http://localhost:5000/api";
+// Deploy config: API base URL comes from VITE_API_URL.
+const API = API_URL;
 
 export default function MatchPage() {
   const { token } = useAuth();
