@@ -19,9 +19,6 @@ router.post("/send", auth, async (req, res) => {
       });
     }
 
-    // Kiểm tra trùng lặp THEO CẶP NGƯỜI DÙNG, không phân biệt ai gửi ai nhận,
-    // và không phân biệt theo postId - để đảm bảo 2 người chỉ có DUY NHẤT 1
-    // "kết nối" (match) với nhau, tránh tách rời lịch sử chat thành nhiều luồng.
     const existing = await Match.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },
@@ -56,6 +53,14 @@ router.post("/send", auth, async (req, res) => {
       content: "Bạn có một lời mời kết nối mới",
       refId: match._id,
     });
+
+    // Bắn socket để badge "Lời mời" và chuông thông báo của người nhận
+    // tăng real-time, không cần F5 mới thấy
+    const io = req.app.get("io");
+    if (io) {
+      io.to(receiverId.toString()).emit("new_match_request");
+      io.to(receiverId.toString()).emit("new_notification");
+    }
 
     res.status(201).json({ success: true, message: "Đã gửi lời mời", match });
   } catch (error) {
@@ -136,6 +141,12 @@ router.put("/accept/:matchId", auth, async (req, res) => {
       content: "Lời mời kết nối của bạn đã được chấp nhận",
       refId: match._id,
     });
+
+    // Báo cho người gửi biết lời mời đã được chấp nhận (real-time)
+    const io = req.app.get("io");
+    if (io) {
+      io.to(match.sender.toString()).emit("new_notification");
+    }
 
     res.json({ success: true, message: "Đã chấp nhận", match, session });
   } catch (error) {

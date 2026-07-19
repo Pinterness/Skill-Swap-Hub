@@ -17,6 +17,7 @@ const profileRoutes = require("./routes/profile");
 const groupRoutes = require("./routes/group");
 const Match = require("./models/Match");
 const cron = require("node-cron");
+const path = require("path");
 
 const app = express();
 
@@ -103,6 +104,7 @@ app.use("/api/session", sessionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/group", groupRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const connectDB = async () => {
   try {

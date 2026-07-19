@@ -17,14 +17,20 @@ interface ToastItem {
   id: string;
   senderName: string;
   content: string;
-  conversationKey: string; // matchId hoặc "group_<groupId>"
+  conversationKey: string;
 }
 
 interface ChatNotificationContextValue {
   unreadCounts: Record<string, number>;
+  notificationCount: number;
+  matchCount: number;
+  notificationsEnabled: boolean;
+  toggleNotifications: () => void;
   markAsRead: (conversationKey: string) => void;
   setActiveConversationId: (conversationKey: string | null) => void;
-  setActiveCallRoom: (roomName: string | null) => void; // Cung cấp hàm này để ChatPage có thể gọi Jitsi
+  setActiveCallRoom: (roomName: string | null) => void;
+  setNotificationCount: (count: number) => void;
+  setMatchCount: (count: number) => void;
 }
 
 const ChatNotificationContext =
@@ -89,9 +95,25 @@ export function ChatNotificationProvider({
 
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [matchCount, setMatchCount] = useState(0);
+
+  // ── Bật/tắt thông báo (popup toast) - lưu vào localStorage để giữ nguyên qua các lần mở app ──
+  const [notificationsEnabled, setNotificationsEnabledState] = useState(
+    () => localStorage.getItem("notificationsEnabled") !== "false",
+  );
+  const notifEnabledRef = useRef(notificationsEnabled);
+  useEffect(() => {
+    notifEnabledRef.current = notificationsEnabled;
+    localStorage.setItem("notificationsEnabled", String(notificationsEnabled));
+  }, [notificationsEnabled]);
+  const toggleNotifications = () => {
+    setNotificationsEnabledState((prev) => !prev);
+  };
+
   const activeConversationRef = useRef<string | null>(null);
 
-  // ── TRẠNG THÁI CUỘC GỌI & NHÓM ──
   const [activeCallRoom, setActiveCallRoom] = useState<string | null>(null);
   const [incomingCall, setIncomingCall] = useState<{
     roomName: string;
@@ -119,14 +141,48 @@ export function ChatNotificationProvider({
     });
   };
 
-  // Định danh với socket server ngay khi biết userId (đăng nhập)
-  // Ghi chú: Có thể xoá đoạn socket.emit("identify") bên MainLayout đi để tránh gọi 2 lần, để nguyên ở đây là chuẩn nhất.
   useEffect(() => {
     if (userId) socket.emit("identify", userId);
   }, [userId]);
 
+  // Lấy số lượng thông báo/lời mời thật lúc mới load trang hoặc đăng nhập
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchCounts = async () => {
+      try {
+        const notifRes = await axios.get(`${API}/notification`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const notifications = notifRes.data?.notifications || [];
+        const unreadNotif = notifications.filter((n: any) => !n.isRead).length;
+        setNotificationCount(unreadNotif);
+      } catch (err) {
+        console.error("Lỗi lấy số thông báo:", err);
+      }
+
+      try {
+        const matchRes = await axios.get(`${API}/match/received`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const matches = matchRes.data?.matches || [];
+        const pendingCount = matches.filter(
+          (m: any) => m.status === "pending",
+        ).length;
+        setMatchCount(pendingCount);
+      } catch (err) {
+        console.error("Lỗi lấy số lời mời:", err);
+      }
+    };
+
+    fetchCounts();
+  }, [token]);
+
   useEffect(() => {
     const pushToast = (item: ToastItem) => {
+      // Tôn trọng cài đặt bật/tắt thông báo - vẫn tăng số chưa đọc,
+      // chỉ ẩn popup toast khi người dùng đã tắt
+      if (!notifEnabledRef.current) return;
       setToasts((prev) => [...prev, item]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== item.id));
@@ -139,9 +195,7 @@ export function ChatNotificationProvider({
       if (isMine) return;
 
       const key = msg.matchId;
-      const isViewingThis = activeConversationRef.current === key;
-
-      if (!isViewingThis) {
+      if (activeConversationRef.current !== key) {
         setUnreadCounts((prev) => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
         pushToast({
           id: msg._id,
@@ -158,9 +212,7 @@ export function ChatNotificationProvider({
       if (isMine) return;
 
       const key = `group_${msg.groupId}`;
-      const isViewingThis = activeConversationRef.current === key;
-
-      if (!isViewingThis) {
+      if (activeConversationRef.current !== key) {
         setUnreadCounts((prev) => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
         pushToast({
           id: msg._id,
@@ -173,13 +225,23 @@ export function ChatNotificationProvider({
 
     const handleIncomingCall = (data: any) => setIncomingCall(data);
     const handleCallCancelled = () => setIncomingCall(null);
-    const handleGroupInvite = (data: any) => setGroupInvite(data);
+    const handleGroupInvite = (data: any) => {
+      setGroupInvite(data);
+      setNotificationCount((prev) => prev + 1);
+    };
+
+    // Bắn từ backend mỗi khi có Notification mới được tạo (xem routes/match.js, routes/group.js)
+    const handleNewNotification = () =>
+      setNotificationCount((prev) => prev + 1);
+    const handleNewMatchRequest = () => setMatchCount((prev) => prev + 1);
 
     socket.on("new_message", handleNewMessage);
     socket.on("new_group_message", handleNewGroupMessage);
     socket.on("incoming_call", handleIncomingCall);
     socket.on("call_cancelled", handleCallCancelled);
     socket.on("group_invite", handleGroupInvite);
+    socket.on("new_notification", handleNewNotification);
+    socket.on("new_match_request", handleNewMatchRequest);
 
     return () => {
       socket.off("new_message", handleNewMessage);
@@ -187,6 +249,8 @@ export function ChatNotificationProvider({
       socket.off("incoming_call", handleIncomingCall);
       socket.off("call_cancelled", handleCallCancelled);
       socket.off("group_invite", handleGroupInvite);
+      socket.off("new_notification", handleNewNotification);
+      socket.off("new_match_request", handleNewMatchRequest);
     };
   }, [userId]);
 
@@ -195,7 +259,6 @@ export function ChatNotificationProvider({
     navigate("/dashboard/chat");
   };
 
-  // ── XỬ LÝ SỰ KIỆN CUỘC GỌI & NHÓM ──
   const acceptIncomingCall = () => {
     if (!incomingCall) return;
     setActiveCallRoom(incomingCall.roomName);
@@ -233,14 +296,19 @@ export function ChatNotificationProvider({
     <ChatNotificationContext.Provider
       value={{
         unreadCounts,
+        notificationCount,
+        matchCount,
+        notificationsEnabled,
+        toggleNotifications,
         markAsRead,
         setActiveConversationId,
         setActiveCallRoom,
+        setNotificationCount,
+        setMatchCount,
       }}
     >
       {children}
 
-      {/* ── Toast góc màn hình ── */}
       <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto">
@@ -249,7 +317,6 @@ export function ChatNotificationProvider({
         ))}
       </div>
 
-      {/* ── Popup báo có cuộc gọi 1-1 đến ── */}
       {incomingCall && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
@@ -280,7 +347,6 @@ export function ChatNotificationProvider({
         </div>
       )}
 
-      {/* ── Popup lời mời vào nhóm học ── */}
       {groupInvite && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
@@ -311,7 +377,6 @@ export function ChatNotificationProvider({
         </div>
       )}
 
-      {/* ── Cửa sổ cuộc gọi video Jitsi (Hiện ở mọi nơi) ── */}
       {activeCallRoom && (
         <div className="fixed inset-0 z-[300]">
           <JitsiMeeting

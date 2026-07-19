@@ -16,12 +16,12 @@ const NotificationSchema = new mongoose.Schema(
         "new_message",
         "session_reminder",
         "review_received",
-        "group_invite", // Lời mời tham gia buổi học nhóm
+        "group_invite",
       ],
       required: true,
     },
     content: { type: String, required: true },
-    refId: { type: mongoose.Schema.Types.ObjectId }, // ID của match/session/message/group liên quan
+    refId: { type: mongoose.Schema.Types.ObjectId },
     isRead: { type: Boolean, default: false },
   },
   { timestamps: true },

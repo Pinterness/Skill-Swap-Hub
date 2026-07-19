@@ -1,4 +1,4 @@
-/* 1. ĐỊNH NGHĨA MÃ MÀU GỐC (Bạn đang thiếu phần này) */
+/* 1. ĐỊNH NGHĨA MÃ MÀU GỐC - DARK MODE (mặc định) */
 :root {
   --background: #080A1A;
   --foreground: #F0F0FF;
@@ -15,7 +15,24 @@
   --border: rgba(255, 255, 255, 0.08);
 }
 
-/* 2. DẠY TAILWIND CÁCH ĐỌC MÀU (Phần bạn đã làm đúng) */
+/* 1b. LIGHT MODE - kích hoạt bằng cách thêm class "light" vào thẻ <html> */
+:root.light {
+  --background: #F5F6FA;
+  --foreground: #14162B;
+  --card: #FFFFFF;
+  --card-foreground: #14162B;
+  --primary: #FF6B4A;
+  --primary-foreground: #ffffff;
+  --secondary: #EDEEF5;
+  --secondary-foreground: #14162B;
+  --accent: #7C3AED;
+  --accent-foreground: #ffffff;
+  --muted: #E9EAF2;
+  --muted-foreground: #6B6E8C;
+  --border: rgba(0, 0, 0, 0.08);
+}
+
+/* 2. DẠY TAILWIND CÁCH ĐỌC MÀU */
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

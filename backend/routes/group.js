@@ -27,6 +27,24 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+// Lấy các lời mời nhóm đang chờ MÌNH xác nhận
+// LƯU Ý: route này phải đặt TRƯỚC "/:groupId" bên dưới, nếu không Express sẽ
+// hiểu nhầm "invites" là 1 giá trị :groupId và gây lỗi cast ObjectId thất bại.
+router.get("/invites", auth, async (req, res) => {
+  try {
+    const groups = await Group.find({
+      members: { $elemMatch: { user: req.user.id, status: "pending" } },
+      status: { $ne: "closed" },
+    })
+      .populate("teacher", "username avatar")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, groups });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi hệ thống" });
+  }
+});
+
 // Tạo nhóm mới - chỉ được gộp những người đã có match "accepted" với mình
 router.post("/", auth, async (req, res) => {
   try {
@@ -81,11 +99,12 @@ router.post("/", auth, async (req, res) => {
         refId: group._id,
       });
       if (io) {
-        io.to(studentId).emit("group_invite", {
+        io.to(studentId.toString()).emit("group_invite", {
           groupId: group._id.toString(),
           title: group.title,
           teacherName: req.user.username,
         });
+        io.to(studentId.toString()).emit("new_notification");
       }
     }
 
@@ -204,8 +223,6 @@ router.post("/:groupId/messages", auth, async (req, res) => {
     });
     const populated = await message.populate("sender", "username avatar");
 
-    // Bắn tới phòng cá nhân của giáo viên + tất cả thành viên đã accepted
-    // (không cần "join_group" nữa - luôn nhận được dù không mở đúng nhóm này)
     const io = req.app.get("io");
     if (io) {
       const recipientIds = new Set([

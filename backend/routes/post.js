@@ -38,6 +38,18 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Lấy toàn bộ bài đăng của chính mình (để quản lý cả bài đã đóng)
+router.get("/my-posts", authMiddleware, async (req, res) => {
+  try {
+    const posts = await Post.find({ author: req.user.id }).sort({
+      createdAt: -1,
+    });
+    res.json({ success: true, posts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi lấy bài của bạn" });
+  }
+});
+
 // 2. LẤY CHI TIẾT MỘT BÀI ĐĂNG (API BẠN ĐANG THIẾU)
 router.get("/:postId", async (req, res) => {
   try {
@@ -57,18 +69,6 @@ router.get("/:postId", async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Lỗi lấy chi tiết bài viết" });
-  }
-});
-
-// Lấy toàn bộ bài đăng của chính mình (để quản lý cả bài đã đóng)
-router.get("/my-posts", authMiddleware, async (req, res) => {
-  try {
-    const posts = await Post.find({ author: req.user.id }).sort({
-      createdAt: -1,
-    });
-    res.json({ success: true, posts });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Lỗi lấy bài của bạn" });
   }
 });
 
