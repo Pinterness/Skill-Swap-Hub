@@ -39,7 +39,22 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // Giới hạn file 5MB
 });
-// ───────────────────────────────────────────
+
+router.get("/featured", async (req, res) => {
+  try {
+    const users = await User.find({
+      status: "active",
+      "stats.totalReviews": { $gte: 1 },
+    })
+      .select("username avatar skillsOffered stats")
+      .sort({ "stats.averageRating": -1, "stats.totalTaught": -1 })
+      .limit(6);
+
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Lỗi hệ thống" });
+  }
+});
 
 // 1. UPLOAD ẢNH (Avatar & Cover Image)
 router.put(

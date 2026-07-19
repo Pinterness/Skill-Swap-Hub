@@ -20,20 +20,36 @@ const cron = require("node-cron");
 const path = require("path");
 
 const app = express();
-const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
-  Boolean,
-);
+const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL];
 
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+
+    const ok = allowedOrigins.some((o) => origin === o);
+
+    if (ok) return callback(null, true);
+
+    console.log("Blocked Origin:", origin);
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+};
 // Deploy config: allow Vercel frontend origin and local Vite during development.
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    if (
+      origin === "http://localhost:5173" ||
+      origin === process.env.CLIENT_URL ||
+      origin.endsWith(".vercel.app")
+    ) {
       return callback(null, true);
     }
 
-    return callback(new Error("Not allowed by CORS"));
+    callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
 };

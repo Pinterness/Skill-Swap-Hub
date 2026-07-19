@@ -29,7 +29,7 @@ export default function AuthForm({
 
     try {
       if (isLogin) {
-        // Gọi API đăng nhập
+        console.log("BASE URL:", api.defaults.baseURL); // Gọi API đăng nhập
         // Deploy config: auth endpoint uses VITE_API_URL.
         const res = await api.post(`/api/auth/login`, {
           email,
