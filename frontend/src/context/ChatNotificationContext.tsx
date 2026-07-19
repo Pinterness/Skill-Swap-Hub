@@ -7,12 +7,11 @@ import {
   ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { socket } from "../lib/socket";
+import api from "../lib/api";
+import socket from "../lib/socket";
 import { useAuth } from "../hooks/useAuth";
 import { Video, PhoneOff, Users } from "lucide-react";
 import JitsiMeeting from "../components/JitsiMeeting";
-import { API_URL } from "../lib/config";
 
 interface ToastItem {
   id: string;
@@ -47,8 +46,6 @@ export function useChatNotifications() {
   return ctx;
 }
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 function ToastCard({
   toast,
@@ -153,7 +150,7 @@ export function ChatNotificationProvider({
 
     const fetchCounts = async () => {
       try {
-        const notifRes = await axios.get(`${API}/notification`, {
+        const notifRes = await api.get(`/notification`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const notifications = notifRes.data?.notifications || [];
@@ -164,7 +161,7 @@ export function ChatNotificationProvider({
       }
 
       try {
-        const matchRes = await axios.get(`${API}/match/received`, {
+        const matchRes = await api.get(`/match/received`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const matches = matchRes.data?.matches || [];
@@ -279,8 +276,8 @@ export function ChatNotificationProvider({
   const respondGroupInvite = async (accept: boolean) => {
     if (!groupInvite) return;
     try {
-      await axios.put(
-        `${API}/group/${groupInvite.groupId}/respond`,
+      await api.put(
+        `/group/${groupInvite.groupId}/respond`,
         { accept },
         { headers: { Authorization: `Bearer ${token}` } },
       );

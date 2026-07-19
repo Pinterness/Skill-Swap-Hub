@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
-import { API_URL } from "../lib/config";
 import {
   CheckCircle,
   XCircle,
@@ -23,8 +22,6 @@ interface Session {
   createdAt: string;
 }
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 export default function SessionPage() {
   const { token, user } = useAuth();
@@ -53,7 +50,7 @@ export default function SessionPage() {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/session`, { headers });
+      const res = await api.get(`/session`, { headers });
       setSessions(res.data.sessions);
     } catch (err) {
       console.error(err);
@@ -64,7 +61,7 @@ export default function SessionPage() {
 
   const handleStart = async (sessionId: string) => {
     try {
-      await axios.put(`${API}/session/start/${sessionId}`, {}, { headers });
+      await api.put(`/session/start/${sessionId}`, {}, { headers });
       setSuccess("Buổi học đã bắt đầu!");
       fetchSessions();
     } catch (err: any) {
@@ -74,7 +71,7 @@ export default function SessionPage() {
 
   const handleComplete = async (sessionId: string) => {
     try {
-      await axios.put(`${API}/session/complete/${sessionId}`, {}, { headers });
+      await api.put(`/session/complete/${sessionId}`, {}, { headers });
       setSuccess("Buổi học đã hoàn thành!");
       fetchSessions();
     } catch (err: any) {
@@ -84,7 +81,7 @@ export default function SessionPage() {
 
   const handleCancel = async (sessionId: string) => {
     try {
-      await axios.put(`${API}/session/cancel/${sessionId}`, {}, { headers });
+      await api.put(`/session/cancel/${sessionId}`, {}, { headers });
       setSuccess("Đã hủy buổi học!");
       fetchSessions();
     } catch (err: any) {
@@ -94,8 +91,8 @@ export default function SessionPage() {
 
   const handleSchedule = async (sessionId: string, scheduledAt: string) => {
     try {
-      await axios.put(
-        `${API}/session/schedule/${sessionId}`,
+      await api.put(
+        `/session/schedule/${sessionId}`,
         { scheduledAt },
         { headers },
       );
@@ -118,8 +115,8 @@ export default function SessionPage() {
       : selectedSession.teacherId._id;
 
     try {
-      await axios.post(
-        `${API}/review`,
+      await api.post(
+        `/review`,
         {
           sessionId: selectedSession._id,
           revieweeId,

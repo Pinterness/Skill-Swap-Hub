@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -16,10 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../context/ThemeContext";
-import { API_URL } from "../lib/config";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -74,8 +71,8 @@ export default function SettingsModal({
 
     try {
       setPasswordLoading(true);
-      await axios.put(
-        `${API}/auth/change-password`,
+      await api.put(
+        `/auth/change-password`,
         { oldPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -109,7 +106,7 @@ export default function SettingsModal({
 
     try {
       setDeleteLoading(true);
-      await axios.delete(`${API}/user/account`, {
+      await api.delete(`/user/account`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { password: deletePassword },
       });

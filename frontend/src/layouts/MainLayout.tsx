@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useChatNotifications } from "../context/ChatNotificationContext";
 import SettingsModal from "../components/SettingsModal";
-import { API_URL as BASE_API_URL } from "../lib/config";
 import {
   LayoutGrid,
   Users,
@@ -21,8 +20,6 @@ import {
 } from "lucide-react";
 
 // ĐÃ SỬA: khớp đúng với server.js (app.use("/api/notification", ...) - SỐ ÍT)
-// Deploy config: notification API URL is derived from VITE_API_URL.
-const API_URL = `${BASE_API_URL}/notification`;
 
 export default function MainLayout({
   children,
@@ -69,7 +66,7 @@ export default function MainLayout({
   const fetchNotifications = async () => {
     try {
       setLoadingNotifs(true);
-      const res = await axios.get(API_URL, {
+      const res = await api.get("/notification", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -88,8 +85,8 @@ export default function MainLayout({
 
   const handleMarkAllAsRead = async () => {
     try {
-      await axios.put(
-        `${API_URL}/read-all`,
+      await api.put(
+        "/notification/read-all",
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

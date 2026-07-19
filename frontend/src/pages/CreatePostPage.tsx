@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { Send } from "lucide-react";
-import { API_URL } from "../lib/config";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 const FIELDS = [
   "Công nghệ",
@@ -49,8 +46,8 @@ export default function CreatePostPage() {
     setError("");
     try {
       setLoading(true);
-      await axios.post(
-        `${API}/post`,
+      await api.post(
+        `/post`,
         {
           type,
           title,

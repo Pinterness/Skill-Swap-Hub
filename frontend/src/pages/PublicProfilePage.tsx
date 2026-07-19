@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { ArrowLeft, Send, Star, BookOpen, Award, X } from "lucide-react";
-import { API_URL } from "../lib/config";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 export default function PublicProfilePage() {
   const { userId } = useParams();
@@ -32,7 +29,7 @@ export default function PublicProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/profile/${userId}`);
+      const res = await api.get(`/profile/${userId}`);
       setProfile(res.data.user);
       setPosts(res.data.posts || []);
       setReviews(res.data.reviews || []);
@@ -47,8 +44,8 @@ export default function PublicProfilePage() {
     setSending(true);
     setMatchError("");
     try {
-      await axios.post(
-        `${API}/match/send`,
+      await api.post(
+        `/match/send`,
         {
           receiverId: userId,
           postId: null,

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
-import { API_URL } from "../lib/config";
 import {
   Save,
   Plus,
@@ -17,8 +16,6 @@ import {
   Shield,
 } from "lucide-react";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 export default function ProfilePage() {
   const { token, user } = useAuth();
@@ -67,7 +64,7 @@ export default function ProfilePage() {
       const userId = user?.id || user?._id;
       if (!userId) return;
       try {
-        const res = await axios.get(`${API}/profile/${userId}`);
+        const res = await api.get(`/profile/${userId}`);
         const freshUser = res.data?.user;
         if (freshUser) {
           // Đồng bộ TOÀN BỘ dữ liệu mới nhất từ DB, không chỉ riêng stats
@@ -108,7 +105,7 @@ export default function ProfilePage() {
     setSuccess("");
     try {
       setLoading(true);
-      await axios.put(`${API}/user/profile`, { username, avatar }, { headers });
+      await api.put(`/user/profile`, { username, avatar }, { headers });
       localStorage.setItem(
         "user",
         JSON.stringify({ ...user, username, avatar, stats: liveStats }),
@@ -126,8 +123,8 @@ export default function ProfilePage() {
     setSuccess("");
     try {
       setLoading(true);
-      await axios.put(
-        `${API}/user/profile`,
+      await api.put(
+        `/user/profile`,
         { skillsOffered, skillsWanted },
         { headers },
       );
@@ -172,7 +169,7 @@ export default function ProfilePage() {
     setSuccess("");
     try {
       setLoading(true);
-      const res = await axios.post(`${API}/user/certificate`, newCert, {
+      const res = await api.post(`/user/certificate`, newCert, {
         headers,
       });
       setCertificates(res.data.certificates);
@@ -196,7 +193,7 @@ export default function ProfilePage() {
     setError("");
     setSuccess("");
     try {
-      const res = await axios.delete(`${API}/user/certificate/${certId}`, {
+      const res = await api.delete(`/user/certificate/${certId}`, {
         headers,
       });
       setCertificates(res.data.certificates);

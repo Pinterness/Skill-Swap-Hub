@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
-import { API_URL } from "../lib/config";
 import {
   Users,
   FileText,
@@ -14,8 +13,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 interface User {
   _id: string;
@@ -74,7 +71,7 @@ export default function AdminPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/admin/stats`, { headers });
+      const res = await api.get(`/admin/stats`, { headers });
       setStats(res.data.stats);
     } catch (err) {
       console.error(err);
@@ -86,7 +83,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/admin/users`, { headers });
+      const res = await api.get(`/admin/users`, { headers });
       setUsers(res.data.users);
     } catch (err) {
       console.error(err);
@@ -98,7 +95,7 @@ export default function AdminPage() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/admin/posts`, { headers });
+      const res = await api.get(`/admin/posts`, { headers });
       setPosts(res.data.posts);
     } catch (err) {
       console.error(err);
@@ -117,8 +114,8 @@ export default function AdminPage() {
       return;
 
     try {
-      const res = await axios.put(
-        `${API}/admin/users/${user._id}/block`,
+      const res = await api.put(
+        `/admin/users/${user._id}/block`,
         {},
         { headers },
       );
@@ -140,8 +137,8 @@ export default function AdminPage() {
       return;
 
     try {
-      const res = await axios.put(
-        `${API}/admin/posts/${post._id}/hide`,
+      const res = await api.put(
+        `/admin/posts/${post._id}/hide`,
         {},
         { headers },
       );

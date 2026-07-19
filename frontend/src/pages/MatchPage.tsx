@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // 1. Thêm useNavigate
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { Check, X, RotateCcw, Clock, UserCheck } from "lucide-react";
-import { API_URL } from "../lib/config";
 
 interface Match {
   _id: string;
@@ -25,8 +24,6 @@ interface Match {
   createdAt: string;
 }
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 export default function MatchPage() {
   const { token } = useAuth();
@@ -46,8 +43,8 @@ export default function MatchPage() {
     try {
       setLoading(true);
       const [recv, snt] = await Promise.all([
-        axios.get(`${API}/match/received`, { headers }),
-        axios.get(`${API}/match/sent`, { headers }),
+        api.get(`/match/received`, { headers }),
+        api.get(`/match/sent`, { headers }),
       ]);
       setReceived(recv.data.matches);
       setSent(snt.data.matches);
@@ -60,7 +57,7 @@ export default function MatchPage() {
 
   const handleAccept = async (matchId: string) => {
     try {
-      await axios.put(`${API}/match/accept/${matchId}`, {}, { headers });
+      await api.put(`/match/accept/${matchId}`, {}, { headers });
       fetchAll();
     } catch (err) {
       console.error(err);
@@ -69,7 +66,7 @@ export default function MatchPage() {
 
   const handleReject = async (matchId: string) => {
     try {
-      await axios.put(`${API}/match/reject/${matchId}`, {}, { headers });
+      await api.put(`/match/reject/${matchId}`, {}, { headers });
       fetchAll();
     } catch (err) {
       console.error(err);
@@ -78,7 +75,7 @@ export default function MatchPage() {
 
   const handleCancel = async (matchId: string) => {
     try {
-      await axios.delete(`${API}/match/cancel/${matchId}`, { headers });
+      await api.delete(`/match/cancel/${matchId}`, { headers });
       fetchAll();
     } catch (err) {
       console.error(err);

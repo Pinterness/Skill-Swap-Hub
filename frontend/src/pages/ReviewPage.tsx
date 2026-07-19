@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import { Star, ArrowLeft, MessageSquare } from "lucide-react";
 // 1. IMPORT THÊM useAuth
 import { useAuth } from "../hooks/useAuth";
-import { API_URL } from "../lib/config";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 interface Review {
   _id: string;
@@ -51,11 +48,11 @@ export default function ReviewPage() {
     try {
       setLoading(true);
       // SỬ DỤNG targetId THAY VÌ userId
-      const reviewRes = await axios.get(`${API}/review/user/${targetId}`);
+      const reviewRes = await api.get(`/review/user/${targetId}`);
       const reviewData = reviewRes.data?.reviews || [];
       setReviews(reviewData);
 
-      const profileRes = await axios.get(`${API}/profile/${targetId}`);
+      const profileRes = await api.get(`/profile/${targetId}`);
       if (profileRes.data?.user) {
         setUserStats({
           username: profileRes.data.user.username || "Người dùng",

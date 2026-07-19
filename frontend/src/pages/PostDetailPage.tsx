@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { ArrowLeft, Trash2, Send, X, AlertCircle, Clock } from "lucide-react";
-import { API_URL } from "../lib/config";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 export default function PostDetailPage() {
   const { id } = useParams();
@@ -24,7 +21,7 @@ export default function PostDetailPage() {
     const fetchPost = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API}/post/${id}`);
+        const res = await api.get(`/post/${id}`);
         setPost(res.data.post);
       } catch (error) {
         console.error("Lỗi lấy bài viết:", error);
@@ -43,7 +40,7 @@ export default function PostDetailPage() {
     )
       return;
     try {
-      await axios.delete(`${API}/post/${id}`, {
+      await api.delete(`/post/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Xóa thành công!");
@@ -60,8 +57,8 @@ export default function PostDetailPage() {
       );
     setSending(true);
     try {
-      await axios.post(
-        `${API}/match/send`,
+      await api.post(
+        `/match/send`,
         {
           receiverId: post.author._id,
           postId: post._id,

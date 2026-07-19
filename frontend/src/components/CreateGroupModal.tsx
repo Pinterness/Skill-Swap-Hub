@@ -1,10 +1,7 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import { X, Users } from "lucide-react";
-import { API_URL } from "../lib/config";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 interface SimpleUser {
   _id: string;
@@ -44,8 +41,8 @@ export default function CreateGroupModal({
     setError("");
     try {
       setLoading(true);
-      await axios.post(
-        `${API}/group`,
+      await api.post(
+        `/group`,
         { studentIds: selectedIds, title: title.trim() || undefined },
         { headers: { Authorization: `Bearer ${token}` } },
       );

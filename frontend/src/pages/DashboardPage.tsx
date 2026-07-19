@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
-import { API_URL } from "../lib/config";
 import {
   BookOpen,
   Star,
@@ -18,8 +17,6 @@ import {
   PlusCircle,
 } from "lucide-react";
 
-// Deploy config: API base URL comes from VITE_API_URL.
-const API = API_URL;
 
 interface Post {
   _id: string;
@@ -98,7 +95,7 @@ export default function DashboardPage() {
   const fetchLiveStats = async () => {
     if (!user?.id) return;
     try {
-      const res = await axios.get(`${API}/profile/${user.id}`);
+      const res = await api.get(`/profile/${user.id}`);
       if (res.data?.user) {
         setLiveData({
           taught: res.data.user.stats?.totalTaught || 0,
@@ -114,7 +111,7 @@ export default function DashboardPage() {
   const fetchDiscoverPosts = async (params = {}) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/post`, { params });
+      const res = await api.get(`/post`, { params });
 
       setDiscoverPosts(res.data.posts);
     } catch (error) {
@@ -127,7 +124,7 @@ export default function DashboardPage() {
   const fetchMyPosts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/post/my-posts`, {
+      const res = await api.get(`/post/my-posts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMyPosts(res.data.posts);
@@ -153,8 +150,8 @@ export default function DashboardPage() {
       return alert("Vui lòng nhập lời nhắn");
     setSending(true);
     try {
-      await axios.post(
-        `${API}/match/send`,
+      await api.post(
+        `/match/send`,
         {
           receiverId: selectedPost.author._id,
           postId: selectedPost._id,
@@ -182,7 +179,7 @@ export default function DashboardPage() {
     )
       return;
     try {
-      await axios.delete(`${API}/post/${postId}`, {
+      await api.delete(`/post/${postId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMyPosts(myPosts.filter((p) => p._id !== postId));
@@ -195,8 +192,8 @@ export default function DashboardPage() {
     e.stopPropagation();
     setOpenMenuId(null);
     try {
-      await axios.put(
-        `${API}/post/${post._id}/close`,
+      await api.put(
+        `/post/${post._id}/close`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
