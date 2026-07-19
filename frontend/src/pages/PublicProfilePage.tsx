@@ -29,7 +29,7 @@ export default function PublicProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/profile/${userId}`);
+      const res = await api.get(`/api/profile/${userId}`);
       setProfile(res.data.user);
       setPosts(res.data.posts || []);
       setReviews(res.data.reviews || []);
@@ -45,7 +45,7 @@ export default function PublicProfilePage() {
     setMatchError("");
     try {
       await api.post(
-        `/match/send`,
+        `/api/match/send`,
         {
           receiverId: userId,
           postId: null,

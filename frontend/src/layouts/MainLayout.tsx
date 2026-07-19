@@ -66,7 +66,7 @@ export default function MainLayout({
   const fetchNotifications = async () => {
     try {
       setLoadingNotifs(true);
-      const res = await api.get("/notification", {
+      const res = await api.get("/api/notification", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -86,7 +86,7 @@ export default function MainLayout({
   const handleMarkAllAsRead = async () => {
     try {
       await api.put(
-        "/notification/read-all",
+        "/api/notification/read-all",
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

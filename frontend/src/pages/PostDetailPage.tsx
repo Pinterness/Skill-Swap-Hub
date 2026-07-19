@@ -21,7 +21,7 @@ export default function PostDetailPage() {
     const fetchPost = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/post/${id}`);
+        const res = await api.get(`/api/post/${id}`);
         setPost(res.data.post);
       } catch (error) {
         console.error("Lỗi lấy bài viết:", error);
@@ -40,7 +40,7 @@ export default function PostDetailPage() {
     )
       return;
     try {
-      await api.delete(`/post/${id}`, {
+      await api.delete(`/api/post/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Xóa thành công!");
@@ -58,7 +58,7 @@ export default function PostDetailPage() {
     setSending(true);
     try {
       await api.post(
-        `/match/send`,
+        `/api/match/send`,
         {
           receiverId: post.author._id,
           postId: post._id,

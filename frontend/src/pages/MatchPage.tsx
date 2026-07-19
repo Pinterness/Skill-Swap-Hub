@@ -43,8 +43,8 @@ export default function MatchPage() {
     try {
       setLoading(true);
       const [recv, snt] = await Promise.all([
-        api.get(`/match/received`, { headers }),
-        api.get(`/match/sent`, { headers }),
+        api.get(`/api/match/received`, { headers }),
+        api.get(`/api/match/sent`, { headers }),
       ]);
       setReceived(recv.data.matches);
       setSent(snt.data.matches);
@@ -57,7 +57,7 @@ export default function MatchPage() {
 
   const handleAccept = async (matchId: string) => {
     try {
-      await api.put(`/match/accept/${matchId}`, {}, { headers });
+      await api.put(`/api/match/accept/${matchId}`, {}, { headers });
       fetchAll();
     } catch (err) {
       console.error(err);
@@ -66,7 +66,7 @@ export default function MatchPage() {
 
   const handleReject = async (matchId: string) => {
     try {
-      await api.put(`/match/reject/${matchId}`, {}, { headers });
+      await api.put(`/api/match/reject/${matchId}`, {}, { headers });
       fetchAll();
     } catch (err) {
       console.error(err);
@@ -75,7 +75,7 @@ export default function MatchPage() {
 
   const handleCancel = async (matchId: string) => {
     try {
-      await api.delete(`/match/cancel/${matchId}`, { headers });
+      await api.delete(`/api/match/cancel/${matchId}`, { headers });
       fetchAll();
     } catch (err) {
       console.error(err);

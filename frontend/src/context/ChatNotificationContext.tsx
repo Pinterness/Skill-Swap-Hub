@@ -150,7 +150,7 @@ export function ChatNotificationProvider({
 
     const fetchCounts = async () => {
       try {
-        const notifRes = await api.get(`/notification`, {
+        const notifRes = await api.get(`/api/notification`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const notifications = notifRes.data?.notifications || [];
@@ -161,7 +161,7 @@ export function ChatNotificationProvider({
       }
 
       try {
-        const matchRes = await api.get(`/match/received`, {
+        const matchRes = await api.get(`/api/match/received`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const matches = matchRes.data?.matches || [];
@@ -277,7 +277,7 @@ export function ChatNotificationProvider({
     if (!groupInvite) return;
     try {
       await api.put(
-        `/group/${groupInvite.groupId}/respond`,
+        `/api/group/${groupInvite.groupId}/respond`,
         { accept },
         { headers: { Authorization: `Bearer ${token}` } },
       );

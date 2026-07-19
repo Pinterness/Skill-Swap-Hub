@@ -50,7 +50,7 @@ export default function SessionPage() {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/session`, { headers });
+      const res = await api.get(`/api/session`, { headers });
       setSessions(res.data.sessions);
     } catch (err) {
       console.error(err);
@@ -61,7 +61,7 @@ export default function SessionPage() {
 
   const handleStart = async (sessionId: string) => {
     try {
-      await api.put(`/session/start/${sessionId}`, {}, { headers });
+      await api.put(`/api/session/start/${sessionId}`, {}, { headers });
       setSuccess("Buổi học đã bắt đầu!");
       fetchSessions();
     } catch (err: any) {
@@ -71,7 +71,7 @@ export default function SessionPage() {
 
   const handleComplete = async (sessionId: string) => {
     try {
-      await api.put(`/session/complete/${sessionId}`, {}, { headers });
+      await api.put(`/api/session/complete/${sessionId}`, {}, { headers });
       setSuccess("Buổi học đã hoàn thành!");
       fetchSessions();
     } catch (err: any) {
@@ -81,7 +81,7 @@ export default function SessionPage() {
 
   const handleCancel = async (sessionId: string) => {
     try {
-      await api.put(`/session/cancel/${sessionId}`, {}, { headers });
+      await api.put(`/api/session/cancel/${sessionId}`, {}, { headers });
       setSuccess("Đã hủy buổi học!");
       fetchSessions();
     } catch (err: any) {
@@ -92,7 +92,7 @@ export default function SessionPage() {
   const handleSchedule = async (sessionId: string, scheduledAt: string) => {
     try {
       await api.put(
-        `/session/schedule/${sessionId}`,
+        `/api/session/schedule/${sessionId}`,
         { scheduledAt },
         { headers },
       );
@@ -116,7 +116,7 @@ export default function SessionPage() {
 
     try {
       await api.post(
-        `/review`,
+        `/api/review`,
         {
           sessionId: selectedSession._id,
           revieweeId,

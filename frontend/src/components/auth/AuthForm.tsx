@@ -31,7 +31,7 @@ export default function AuthForm({
       if (isLogin) {
         // Gọi API đăng nhập
         // Deploy config: auth endpoint uses VITE_API_URL.
-        const res = await api.post(`/auth/login`, {
+        const res = await api.post(`/api/auth/login`, {
           email,
           password,
         });
@@ -45,7 +45,7 @@ export default function AuthForm({
         // Gọi API đăng ký
         const res = await api.post(
           // Deploy config: auth endpoint uses VITE_API_URL.
-          `/auth/register`,
+          `/api/auth/register`,
           { username, email, password },
         );
         localStorage.setItem("token", res.data.token);

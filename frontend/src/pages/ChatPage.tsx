@@ -140,8 +140,8 @@ export default function ChatPage() {
   const fetchMatches = async () => {
     try {
       const [recv, sent] = await Promise.all([
-        api.get(`/match/received`, { headers }),
-        api.get(`/match/sent`, { headers }),
+        api.get(`/api/match/received`, { headers }),
+        api.get(`/api/match/sent`, { headers }),
       ]);
       const accepted = [...recv.data.matches, ...sent.data.matches].filter(
         (m) => m.status === "accepted",
@@ -166,7 +166,7 @@ export default function ChatPage() {
   const fetchMessages = async (matchId: string) => {
     try {
       setLoading(true);
-      const res = await api.get(`/message/${matchId}`, { headers });
+      const res = await api.get(`/api/message/${matchId}`, { headers });
       setMessages(res.data.messages || []);
     } catch (err) {
       console.error(err);
@@ -177,7 +177,7 @@ export default function ChatPage() {
 
   const fetchGroups = async () => {
     try {
-      const res = await api.get(`/group`, { headers });
+      const res = await api.get(`/api/group`, { headers });
       setGroups(res.data.groups || []);
     } catch (err) {
       console.error(err);
@@ -187,7 +187,7 @@ export default function ChatPage() {
   const fetchGroupMessages = async (groupId: string) => {
     try {
       setGroupLoading(true);
-      const res = await api.get(`/group/${groupId}/messages`, {
+      const res = await api.get(`/api/group/${groupId}/messages`, {
         headers,
       });
       setGroupMessages(res.data.messages || []);
@@ -203,7 +203,7 @@ export default function ChatPage() {
     if (!content.trim() || !selectedMatch) return;
     try {
       await api.post(
-        `/message/${selectedMatch._id}`,
+        `/api/message/${selectedMatch._id}`,
         { content },
         { headers },
       );
@@ -218,7 +218,7 @@ export default function ChatPage() {
     if (!groupContent.trim() || !selectedGroup) return;
     try {
       await api.post(
-        `/group/${selectedGroup._id}/messages`,
+        `/api/group/${selectedGroup._id}/messages`,
         { content: groupContent },
         { headers },
       );
@@ -290,7 +290,7 @@ export default function ChatPage() {
     if (!confirm("Kết thúc buổi học nhóm này?")) return;
     try {
       await api.put(
-        `/group/${selectedGroup._id}/close`,
+        `/api/group/${selectedGroup._id}/close`,
         {},
         { headers },
       );

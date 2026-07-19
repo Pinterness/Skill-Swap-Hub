@@ -71,7 +71,7 @@ export default function AdminPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/admin/stats`, { headers });
+      const res = await api.get(`/api/admin/stats`, { headers });
       setStats(res.data.stats);
     } catch (err) {
       console.error(err);
@@ -83,7 +83,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/admin/users`, { headers });
+      const res = await api.get(`/api/admin/users`, { headers });
       setUsers(res.data.users);
     } catch (err) {
       console.error(err);
@@ -95,7 +95,7 @@ export default function AdminPage() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/admin/posts`, { headers });
+      const res = await api.get(`/api/admin/posts`, { headers });
       setPosts(res.data.posts);
     } catch (err) {
       console.error(err);
@@ -115,7 +115,7 @@ export default function AdminPage() {
 
     try {
       const res = await api.put(
-        `/admin/users/${user._id}/block`,
+        `/api/admin/users/${user._id}/block`,
         {},
         { headers },
       );
@@ -138,7 +138,7 @@ export default function AdminPage() {
 
     try {
       const res = await api.put(
-        `/admin/posts/${post._id}/hide`,
+        `/api/admin/posts/${post._id}/hide`,
         {},
         { headers },
       );

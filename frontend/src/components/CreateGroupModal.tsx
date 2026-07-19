@@ -42,7 +42,7 @@ export default function CreateGroupModal({
     try {
       setLoading(true);
       await api.post(
-        `/group`,
+        `/api/group`,
         { studentIds: selectedIds, title: title.trim() || undefined },
         { headers: { Authorization: `Bearer ${token}` } },
       );

@@ -72,7 +72,7 @@ export default function SettingsModal({
     try {
       setPasswordLoading(true);
       await api.put(
-        `/auth/change-password`,
+        `/api/auth/change-password`,
         { oldPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -106,7 +106,7 @@ export default function SettingsModal({
 
     try {
       setDeleteLoading(true);
-      await api.delete(`/user/account`, {
+      await api.delete(`/api/user/account`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { password: deletePassword },
       });

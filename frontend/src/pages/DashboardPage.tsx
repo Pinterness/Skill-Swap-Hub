@@ -95,7 +95,7 @@ export default function DashboardPage() {
   const fetchLiveStats = async () => {
     if (!user?.id) return;
     try {
-      const res = await api.get(`/profile/${user.id}`);
+      const res = await api.get(`/api/profile/${user.id}`);
       if (res.data?.user) {
         setLiveData({
           taught: res.data.user.stats?.totalTaught || 0,
@@ -111,7 +111,7 @@ export default function DashboardPage() {
   const fetchDiscoverPosts = async (params = {}) => {
     try {
       setLoading(true);
-      const res = await api.get(`/post`, { params });
+      const res = await api.get(`/api/post`, { params });
 
       setDiscoverPosts(res.data.posts);
     } catch (error) {
@@ -124,7 +124,7 @@ export default function DashboardPage() {
   const fetchMyPosts = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/post/my-posts`, {
+      const res = await api.get(`/api/post/my-posts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMyPosts(res.data.posts);
@@ -151,7 +151,7 @@ export default function DashboardPage() {
     setSending(true);
     try {
       await api.post(
-        `/match/send`,
+        `/api/match/send`,
         {
           receiverId: selectedPost.author._id,
           postId: selectedPost._id,
@@ -179,7 +179,7 @@ export default function DashboardPage() {
     )
       return;
     try {
-      await api.delete(`/post/${postId}`, {
+      await api.delete(`/api/post/${postId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMyPosts(myPosts.filter((p) => p._id !== postId));
@@ -193,7 +193,7 @@ export default function DashboardPage() {
     setOpenMenuId(null);
     try {
       await api.put(
-        `/post/${post._id}/close`,
+        `/api/post/${post._id}/close`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );

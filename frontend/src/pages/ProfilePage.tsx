@@ -64,7 +64,7 @@ export default function ProfilePage() {
       const userId = user?.id || user?._id;
       if (!userId) return;
       try {
-        const res = await api.get(`/profile/${userId}`);
+        const res = await api.get(`/api/profile/${userId}`);
         const freshUser = res.data?.user;
         if (freshUser) {
           // Đồng bộ TOÀN BỘ dữ liệu mới nhất từ DB, không chỉ riêng stats
@@ -105,7 +105,7 @@ export default function ProfilePage() {
     setSuccess("");
     try {
       setLoading(true);
-      await api.put(`/user/profile`, { username, avatar }, { headers });
+      await api.put(`/api/user/profile`, { username, avatar }, { headers });
       localStorage.setItem(
         "user",
         JSON.stringify({ ...user, username, avatar, stats: liveStats }),
@@ -124,7 +124,7 @@ export default function ProfilePage() {
     try {
       setLoading(true);
       await api.put(
-        `/user/profile`,
+        `/api/user/profile`,
         { skillsOffered, skillsWanted },
         { headers },
       );
@@ -169,7 +169,7 @@ export default function ProfilePage() {
     setSuccess("");
     try {
       setLoading(true);
-      const res = await api.post(`/user/certificate`, newCert, {
+      const res = await api.post(`/api/user/certificate`, newCert, {
         headers,
       });
       setCertificates(res.data.certificates);
@@ -193,7 +193,7 @@ export default function ProfilePage() {
     setError("");
     setSuccess("");
     try {
-      const res = await api.delete(`/user/certificate/${certId}`, {
+      const res = await api.delete(`/api/user/certificate/${certId}`, {
         headers,
       });
       setCertificates(res.data.certificates);

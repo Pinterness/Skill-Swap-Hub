@@ -48,11 +48,11 @@ export default function ReviewPage() {
     try {
       setLoading(true);
       // SỬ DỤNG targetId THAY VÌ userId
-      const reviewRes = await api.get(`/review/user/${targetId}`);
+      const reviewRes = await api.get(`/api/review/user/${targetId}`);
       const reviewData = reviewRes.data?.reviews || [];
       setReviews(reviewData);
 
-      const profileRes = await api.get(`/profile/${targetId}`);
+      const profileRes = await api.get(`/api/profile/${targetId}`);
       if (profileRes.data?.user) {
         setUserStats({
           username: profileRes.data.user.username || "Người dùng",

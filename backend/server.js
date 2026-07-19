@@ -20,15 +20,16 @@ const cron = require("node-cron");
 const path = require("path");
 
 const app = express();
-const allowedClientOrigins = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
+  Boolean,
+);
 
-// Deploy config: CORS origins come from CLIENT_URL; do not use wildcard origins.
+// Deploy config: allow Vercel frontend origin and local Vite during development.
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedClientOrigins.includes(origin)) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
@@ -39,9 +40,9 @@ const corsOptions = {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  // Deploy config: socket.io uses the same CLIENT_URL allowlist as Express CORS.
+  // Deploy config: socket.io uses the same origin allowlist as Express CORS.
   cors: {
-    origin: allowedClientOrigins,
+    origin: allowedOrigins,
     credentials: true,
   },
 });

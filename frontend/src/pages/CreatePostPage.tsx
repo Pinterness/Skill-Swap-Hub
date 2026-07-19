@@ -47,7 +47,7 @@ export default function CreatePostPage() {
     try {
       setLoading(true);
       await api.post(
-        `/post`,
+        `/api/post`,
         {
           type,
           title,
