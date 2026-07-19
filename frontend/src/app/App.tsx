@@ -14,6 +14,7 @@ import PublicProfilePage from "../pages/PublicProfilePage";
 import ReviewPage from "../pages/ReviewPage";
 import { ChatNotificationProvider } from "../context/ChatNotificationContext";
 import { ThemeProvider } from "../context/ThemeContext";
+import SkillLearnPage from "../pages/SkillLearnPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useAuth();
@@ -27,6 +28,8 @@ export default function App() {
         <ChatNotificationProvider>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+
+            <Route path="/learn/:skillId" element={<SkillLearnPage />} />
 
             <Route
               path="/dashboard"
