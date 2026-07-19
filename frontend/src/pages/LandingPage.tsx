@@ -1,216 +1,288 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Search, Sparkles, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import PostGrid from '../components/feed/PostGrid';
-import AuthForm from '../components/auth/AuthForm';
-import { Post } from '../types';
+import React, { useState } from "react";
+import { motion } from "motion/react";
+import { Search, Sparkles, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import PostGrid from "../components/feed/PostGrid";
+import AuthForm from "../components/auth/AuthForm";
+import { Post } from "../types";
 
-// ── IMPORT CÁC COMPONENT MỚI ──
-import FloatingSkillChips from '../components/FloatingSkillChips';
-import SwapCards from '../components/Swapcards';
-import HowItWorks from '../components/Howitworks';
-import FeaturedUsers from '../components/Featuredusers';
-import Footer from '../components/Footer';
+// LƯU Ý QUAN TRỌNG: Hãy kiểm tra lại tên file thực tế của bạn trong thư mục components
+// và đảm bảo các đường dẫn import dưới đây khớp 100% (chữ hoa/chữ thường) nhé!
+import FloatingSkillChips from "../components/FloatingSkillChips";
+import SwapCards from "../components/Swapcards";
+import HowItWorks from "../components/Howitworks";
+import FeaturedUsers from "../components/Featuredusers";
+import Footer from "../components/Footer";
 
 export default function LandingPage() {
-    const [query, setQuery] = useState('');
-    const [showAuth, setShowAuth] = useState(false);
-    const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
-    const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [showAuth, setShowAuth] = useState(false);
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const navigate = useNavigate();
 
-    const dummyPosts: Post[] = [
-        {
-            _id: '1',
-            title: 'Cần người hướng dẫn ReactJS thực tế',
-            description: 'Mình đã học xong cơ bản nhưng cần người review code và hướng dẫn làm project thực tế.',
-            skillsRequired: ['ReactJS', 'Code Review'],
-            skillsOffered: ['Tiếng Anh', 'Figma'],
-            author: { _id: 'u1', username: 'Alex_Dev', avatar: 'https://i.pravatar.cc/150?u=alex' },
-            createdAt: new Date().toISOString()
-        },
-        {
-            _id: '2',
-            title: 'Giao tiếp Tiếng Anh đổi lấy UI/UX Design',
-            description: 'Mình là giáo viên Tiếng Anh (IELTS 7.5). Muốn tìm bạn designer để trao đổi.',
-            skillsRequired: ['UI/UX Design', 'Wireframing'],
-            skillsOffered: ['IELTS Speaking', 'Ngữ pháp'],
-            author: { _id: 'u2', username: 'Sarah_English' },
-            createdAt: new Date().toISOString()
-        },
-        {
-            _id: '3',
-            title: 'Trao đổi kỹ năng Backend (Node.js) & Marketing',
-            description: 'Mình rành về Node.js, MongoDB nhưng đang loay hoay không biết cách quảng bá sản phẩm.',
-            skillsRequired: ['Marketing', 'SEO'],
-            skillsOffered: ['Node.js', 'MongoDB'],
-            author: { _id: 'u3', username: 'CodeMaster', avatar: 'https://i.pravatar.cc/150?u=code' },
-            createdAt: new Date().toISOString()
-        }
-    ];
+  // Hàm xử lý tìm kiếm khi nhấn Enter hoặc bấm nút Tìm
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (query.trim()) {
+      const skillParam = query.trim().toLowerCase().replace(/\s+/g, "-");
+      navigate(`/learn/${skillParam}`);
+    }
+  };
 
-    const handleAuthSuccess = () => {
-        setShowAuth(false);
-        navigate('/dashboard');
-    };
+  const dummyPosts: Post[] = [
+    {
+      _id: "1",
+      title: "Cần người hướng dẫn ReactJS thực tế",
+      description:
+        "Mình đã học xong cơ bản nhưng cần người review code và hướng dẫn làm project thực tế.",
+      skillsRequired: ["ReactJS", "Code Review"],
+      skillsOffered: ["Tiếng Anh", "Figma"],
+      author: {
+        _id: "u1",
+        username: "Alex_Dev",
+        avatar: "https://i.pravatar.cc/150?u=alex",
+      },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      _id: "2",
+      title: "Giao tiếp Tiếng Anh đổi lấy UI/UX Design",
+      description:
+        "Mình là giáo viên Tiếng Anh (IELTS 7.5). Muốn tìm bạn designer để trao đổi.",
+      skillsRequired: ["UI/UX Design", "Wireframing"],
+      skillsOffered: ["IELTS Speaking", "Ngữ pháp"],
+      author: { _id: "u2", username: "Sarah_English" },
+      createdAt: new Date().toISOString(),
+    },
+    {
+      _id: "3",
+      title: "Trao đổi kỹ năng Backend (Node.js) & Marketing",
+      description:
+        "Mình rành về Node.js, MongoDB nhưng đang loay hoay không biết cách quảng bá sản phẩm.",
+      skillsRequired: ["Marketing", "SEO"],
+      skillsOffered: ["Node.js", "MongoDB"],
+      author: {
+        _id: "u3",
+        username: "CodeMaster",
+        avatar: "https://i.pravatar.cc/150?u=code",
+      },
+      createdAt: new Date().toISOString(),
+    },
+  ];
 
-    return (
-        <div className="relative min-h-screen bg-background overflow-hidden selection:bg-primary/30 text-foreground font-['DM_Sans']">
+  const handleAuthSuccess = () => {
+    setShowAuth(false);
+    navigate("/dashboard");
+  };
 
-            {/* Hiệu ứng ánh sáng nền */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-accent/20 blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
+  return (
+    <div className="relative min-h-screen bg-background overflow-hidden selection:bg-primary/30 text-foreground font-['DM_Sans']">
+      {/* Hiệu ứng ánh sáng nền */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-accent/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
 
-            {/* ── NAVBAR ── */}
-            <div className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
-                <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-primary-foreground" />
-                        </div>
-                        <span className="text-xl font-bold font-['Outfit'] tracking-wide">SkillSwap</span>
-                    </div>
-
-                    <div className="hidden md:flex gap-8 font-medium text-muted-foreground">
-                        <a href="#kham-pha" className="hover:text-primary transition-colors">Khám phá</a>
-                        <a href="#cong-dong" className="hover:text-primary transition-colors">Cộng đồng</a>
-                        <a href="#ve-chung-toi" className="hover:text-primary transition-colors">Về chúng tôi</a>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => { setAuthTab('login'); setShowAuth(true); }}
-                            className="px-5 py-2.5 text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer">
-                            Đăng nhập
-                        </button>
-                        <button
-                            onClick={() => { setAuthTab('register'); setShowAuth(true); }}
-                            className="px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(255,107,74,0.2)] hover:shadow-[0_0_30px_rgba(255,107,74,0.4)] hover:-translate-y-0.5 cursor-pointer">
-                            Tham gia miễn phí
-                        </button>
-                    </div>
-                </nav>
+      {/* ── NAVBAR ── */}
+      <div className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
+        <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => window.scrollTo(0, 0)}
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
+            <span className="text-xl font-bold font-['Outfit'] tracking-wide">
+              SkillSwap
+            </span>
+          </div>
 
-            {/* ── HERO SECTION ── */}
-            <main className="relative z-10 flex items-center min-h-[calc(100vh-100px)] py-12 px-4">
-                {/* Background animation: Chip bay lơ lửng và né chuột */}
-                <FloatingSkillChips />
+          <div className="hidden md:flex gap-8 font-medium text-muted-foreground">
+            <a
+              href="#kham-pha"
+              className="hover:text-primary transition-colors"
+            >
+              Khám phá
+            </a>
+            <a
+              href="#cong-dong"
+              className="hover:text-primary transition-colors"
+            >
+              Cộng đồng
+            </a>
+            <a
+              href="#ve-chung-toi"
+              className="hover:text-primary transition-colors"
+            >
+              Về chúng tôi
+            </a>
+          </div>
 
-                <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    
-                    {/* Cột Trái: Chữ và Tìm kiếm */}
-                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8 shadow-sm"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                            <span className="text-sm text-secondary-foreground tracking-tight font-['DM_Mono']">
-                                Cộng đồng 10.000+ thành viên
-                            </span>
-                        </motion.div>
+          <div className="flex gap-4">
+            <button
+              onClick={() => {
+                setAuthTab("login");
+                setShowAuth(true);
+              }}
+              className="px-5 py-2.5 text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
+            >
+              Đăng nhập
+            </button>
+            <button
+              onClick={() => {
+                setAuthTab("register");
+                setShowAuth(true);
+              }}
+              className="px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(255,107,74,0.2)] hover:shadow-[0_0_30px_rgba(255,107,74,0.4)] hover:-translate-y-0.5 cursor-pointer"
+            >
+              Tham gia miễn phí
+            </button>
+          </div>
+        </nav>
+      </div>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
-                        >
-                            <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold font-['Outfit'] leading-[1.1] mb-6">
-                                Trao đổi kỹ năng <br />
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                                    Kết nối tri thức
-                                </span>
-                            </h1>
-                        </motion.div>
+      {/* ── HERO SECTION ── */}
+      {/* Đã sửa py-12 thành pt-28 pb-12 để phần chữ lùi xuống, không bị Navbar che */}
+      <main className="relative z-10 flex items-center min-h-[calc(100vh-100px)] pt-28 pb-12 px-4">
+        <FloatingSkillChips />
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
-                            className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl leading-relaxed"
-                        >
-                            Nền tảng chia sẻ kỹ năng thực tế. Bạn có chuyên môn, người khác đang cần.
-                            Hãy kết nối, học hỏi chéo và cùng nhau phát triển không giới hạn.
-                        </motion.p>
+        <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Cột Trái */}
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8 shadow-sm"
+            >
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-sm text-secondary-foreground tracking-tight font-['DM_Mono']">
+                Cộng đồng 10.000+ thành viên
+              </span>
+            </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
-                            className="w-full max-w-xl relative flex items-center group"
-                        >
-                            <div className="absolute left-5 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                <Search className="w-6 h-6" />
-                            </div>
-                            <input
-                                type="text"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Kỹ năng bạn muốn học? (VD: ReactJS)"
-                                className="w-full h-16 pl-14 pr-36 rounded-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-foreground text-base placeholder:text-muted-foreground/50 shadow-xl"
-                            />
-                            <button className="absolute right-2 top-2 bottom-2 px-6 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer">
-                                Tìm
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            >
+              <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold font-['Outfit'] leading-[1.1] mb-6">
+                Trao đổi kỹ năng <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                  Kết nối tri thức
+                </span>
+              </h1>
+            </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5, delay: 0.5 }}
-                            className="mt-10 flex flex-wrap justify-center lg:justify-start items-center gap-3"
-                        >
-                            <span className="text-sm text-muted-foreground mr-2 font-['DM_Mono']">Nổi bật:</span>
-                            {['UI/UX Design', 'Giao tiếp tiếng Anh', 'Node.js', 'Figma'].map((skill) => (
-                                <span key={skill}
-                                    className="px-4 py-1.5 rounded-full text-sm font-['DM_Mono'] bg-secondary/40 border border-border hover:border-primary/50 hover:text-primary transition-colors cursor-pointer text-muted-foreground">
-                                    {skill}
-                                </span>
-                            ))}
-                        </motion.div>
-                    </div>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl leading-relaxed"
+            >
+              Nền tảng chia sẻ kỹ năng thực tế. Bạn có chuyên môn, người khác
+              đang cần. Hãy kết nối, học hỏi chéo và cùng nhau phát triển không
+              giới hạn.
+            </motion.p>
 
-                    {/* Cột Phải: Thẻ hoán đổi */}
-                    <div className="hidden lg:block relative w-full">
-                        <SwapCards />
-                    </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+              className="w-full max-w-xl relative flex items-center group"
+            >
+              {/* Thẻ form giúp nhận diện phím Enter khi người dùng gõ xong */}
+              <form
+                onSubmit={handleSearch}
+                className="relative flex items-center group w-full"
+              >
+                <div className="absolute left-5 text-muted-foreground group-focus-within:text-primary transition-colors">
+                  <Search className="w-6 h-6" />
                 </div>
-            </main>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Kỹ năng bạn muốn học? (VD: ReactJS)"
+                  className="w-full h-16 pl-14 pr-36 rounded-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-foreground text-base placeholder:text-muted-foreground/50 shadow-xl"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-2 bottom-2 px-6 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+                >
+                  Tìm
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            </motion.div>
 
-            {/* ── BÀI ĐĂNG GẦN ĐÂY ── */}
-            <section className="relative z-10 py-16 px-4 max-w-7xl mx-auto border-t border-border/50">
-                <div className="text-center md:text-left mb-10">
-                    <h2 className="text-3xl font-bold text-foreground">Giao dịch kỹ năng mới nhất</h2>
-                    <p className="text-muted-foreground mt-2">Khám phá những nhu cầu học tập và giảng dạy vừa được đăng tải</p>
-                </div>
-                <PostGrid posts={dummyPosts} />
-            </section>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="mt-10 flex flex-wrap justify-center lg:justify-start items-center gap-3"
+            >
+              <span className="text-sm text-muted-foreground mr-2 font-['DM_Mono']">
+                Nổi bật:
+              </span>
+              {/* Đổi span thành button và gắn sự kiện chuyển hướng onClick */}
+              {["UI/UX Design", "Giao tiếp tiếng Anh", "Node.js", "Figma"].map(
+                (skill) => {
+                  const skillParam = skill.toLowerCase().replace(/\s+/g, "-");
+                  return (
+                    <button
+                      key={skill}
+                      onClick={() => navigate(`/learn/${skillParam}`)}
+                      className="px-4 py-1.5 rounded-full text-sm font-['DM_Mono'] bg-secondary/40 border border-border hover:border-primary/50 hover:text-primary transition-colors cursor-pointer text-muted-foreground"
+                    >
+                      {skill}
+                    </button>
+                  );
+                },
+              )}
+            </motion.div>
+          </div>
 
-            {/* ── CÁC SECTION MỚI TÍCH HỢP ── */}
-            <div className="relative z-10">
-                <HowItWorks />
-                <FeaturedUsers />
-            </div>
-
-            {/* ── FOOTER ── */}
-            <div className="relative z-10">
-                <Footer />
-            </div>
-
-            {/* ── AUTH MODAL ── */}
-            {showAuth && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-                    <AuthForm
-                        onClose={() => setShowAuth(false)}
-                        defaultTab={authTab}
-                        onSuccess={handleAuthSuccess}
-                    />
-                </div>
-            )}
+          {/* Cột Phải */}
+          <div className="hidden lg:block relative w-full">
+            <SwapCards />
+          </div>
         </div>
-    );
+      </main>
+
+      {/* ── BÀI ĐĂNG GẦN ĐÂY ── */}
+      <section className="relative z-10 py-16 px-4 max-w-7xl mx-auto border-t border-border/50">
+        <div className="text-center md:text-left mb-10">
+          <h2 className="text-3xl font-bold text-foreground">
+            Giao dịch kỹ năng mới nhất
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Khám phá những nhu cầu học tập và giảng dạy vừa được đăng tải
+          </p>
+        </div>
+        <PostGrid posts={dummyPosts} />
+      </section>
+
+      {/* ── CÁC SECTION KHÁC ── */}
+      <div className="relative z-10">
+        <HowItWorks />
+        <FeaturedUsers />
+      </div>
+
+      {/* ── FOOTER ── */}
+      <div className="relative z-10">
+        <Footer />
+      </div>
+
+      {/* ── AUTH MODAL ── */}
+      {showAuth && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <AuthForm
+            onClose={() => setShowAuth(false)}
+            defaultTab={authTab}
+            onSuccess={handleAuthSuccess}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
