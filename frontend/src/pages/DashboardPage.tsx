@@ -17,7 +17,6 @@ import {
   PlusCircle,
 } from "lucide-react";
 
-
 interface Post {
   _id: string;
   title: string;
