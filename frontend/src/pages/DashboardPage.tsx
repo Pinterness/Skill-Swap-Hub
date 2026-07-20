@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "my-posts">(
     "discover",
   );
+  const [errorMessage, setErrorMessage] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -145,9 +146,14 @@ export default function DashboardPage() {
   };
 
   const handleSendMatch = async () => {
-    if (!matchMessage.trim() || !selectedPost)
-      return alert("Vui lòng nhập lời nhắn");
+    if (!matchMessage.trim() || !selectedPost) {
+      setErrorMessage("Vui lòng nhập lời nhắn");
+      return;
+    }
+
     setSending(true);
+    setErrorMessage(""); // Xóa lỗi cũ khi bắt đầu gửi mới
+
     try {
       await api.post(
         `/api/match/send`,
@@ -158,11 +164,13 @@ export default function DashboardPage() {
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+      // Nếu dùng toast notification thì thay alert bằng toast.success ở đây sẽ hay hơn
       alert("Đã gửi lời mời kết nối thành công!");
       setSelectedPost(null);
       setMatchMessage("");
     } catch (err: any) {
-      alert(err.response?.data?.message || "Lỗi hệ thống");
+      // Hiển thị lỗi ra state thay vì dùng alert
+      setErrorMessage(err.response?.data?.message || "Lỗi hệ thống");
     } finally {
       setSending(false);
     }
@@ -594,6 +602,13 @@ export default function DashboardPage() {
               className="w-full px-5 py-4 rounded-2xl bg-secondary/50 border border-border/50 focus:border-[#ff4a40] focus:ring-1 focus:ring-[#ff4a40] outline-none text-sm mb-6 resize-none transition-all duration-300"
               autoFocus
             />
+            {errorMessage && (
+              <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center">
+                <p className="text-sm font-medium text-red-500">
+                  {errorMessage}
+                </p>
+              </div>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={handleSendMatch}

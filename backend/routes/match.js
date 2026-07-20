@@ -19,11 +19,11 @@ router.post("/send", auth, async (req, res) => {
       });
     }
 
+    // ĐOẠN CODE ĐÃ SỬA: Thêm điều kiện postId
     const existing = await Match.findOne({
-      $or: [
-        { sender: senderId, receiver: receiverId },
-        { sender: receiverId, receiver: senderId },
-      ],
+      sender: senderId,
+      receiver: receiverId,
+      postId: postId, // <-- BẮT BUỘC PHẢI THÊM ĐIỀU KIỆN NÀY
       status: { $in: ["pending", "accepted"] },
     });
 
@@ -31,12 +31,12 @@ router.post("/send", auth, async (req, res) => {
       if (existing.status === "accepted") {
         return res.status(400).json({
           success: false,
-          message: "Bạn đã kết nối với người này rồi",
+          message: "Bạn đã kết nối thành công tại bài đăng này rồi", // Đổi lại câu thông báo cho chuẩn
         });
       }
       return res.status(400).json({
         success: false,
-        message: "Đã có lời mời kết nối đang chờ xử lý giữa 2 người",
+        message: "Bạn đã gửi lời mời cho bài đăng này và đang chờ duyệt", // Đổi lại câu thông báo
       });
     }
 

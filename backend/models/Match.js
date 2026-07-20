@@ -1,3 +1,4 @@
+// models/match.js
 const mongoose = require("mongoose");
 
 const MatchSchema = new mongoose.Schema(
@@ -10,7 +11,8 @@ const MatchSchema = new mongoose.Schema(
     postId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Post",
-      default: null,
+      required: true, // Sửa thành true: Bắt buộc phải có bài đăng mới được match
+      // Bỏ default: null đi
     },
     receiver: {
       type: mongoose.Schema.Types.ObjectId,
