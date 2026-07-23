@@ -9,7 +9,7 @@ const transporter = gmailConfigured
       // Bỏ service: "gmail", dùng cấu hình host rõ ràng
       host: "smtp.gmail.com",
       port: 587, // Cổng bảo mật SSL
-      secure: true,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
