@@ -1,39 +1,59 @@
 const nodemailer = require("nodemailer");
 
-const smtpConfigured = Boolean(
-  process.env.SMTP_HOST &&
-    process.env.SMTP_PORT &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS,
+/*
+ * Cấu hình Gmail App Password:
+ * 1. Vào https://myaccount.google.com/security và bật Xác minh 2 bước.
+ * 2. Mở https://myaccount.google.com/apppasswords, tạo App Password cho "Mail".
+ * 3. Điền email Gmail vào EMAIL_USER và mật khẩu 16 ký tự vừa tạo vào EMAIL_PASS
+ *    trong backend/.env. Không dùng mật khẩu đăng nhập Gmail thông thường.
+ */
+const gmailConfigured = Boolean(
+  process.env.EMAIL_USER && process.env.EMAIL_PASS,
 );
 
-const transporter = smtpConfigured
+const transporter = gmailConfigured
   ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: process.env.SMTP_SECURE === "true",
+      service: "gmail",
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     })
   : null;
 
 async function sendVerificationEmail({ email, username, otp }) {
+  // Dùng mã này để test thủ công khi SMTP/Gmail chưa hoạt động.
+  console.log(`[Email verification] OTP for ${email}: ${otp}`);
+
   if (!transporter) {
     console.warn(
-      `[Email verification] SMTP is not configured. OTP for ${email}: ${otp}`,
+      "[Email verification] Chưa có EMAIL_USER hoặc EMAIL_PASS; email không được gửi.",
     );
     return;
   }
 
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM || process.env.SMTP_USER,
-    to: email,
-    subject: "Xác thực email SkillSwap Hub",
-    text: `Chào ${username}, mã xác thực SkillSwap Hub của bạn là ${otp}. Mã có hiệu lực trong 10 phút.`,
-    html: `<p>Chào <strong>${username}</strong>,</p><p>Mã xác thực SkillSwap Hub của bạn là:</p><h2>${otp}</h2><p>Mã có hiệu lực trong 10 phút.</p>`,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.MAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: "Xác thực email SkillSwap Hub",
+      text: `Chào ${username}, mã xác thực SkillSwap Hub của bạn là ${otp}. Mã có hiệu lực trong 10 phút.`,
+      html: `<p>Chào <strong>${username}</strong>,</p><p>Mã xác thực SkillSwap Hub của bạn là:</p><h2>${otp}</h2><p>Mã có hiệu lực trong 10 phút.</p>`,
+    });
+    console.log(
+      `[Email verification] Gmail accepted message ${info.messageId} for ${email}`,
+    );
+    return info;
+  } catch (error) {
+    console.error("[Email verification] Gửi Gmail thất bại:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+    });
+    throw error;
+  }
 }
 
 module.exports = { sendVerificationEmail };
