@@ -26,8 +26,14 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
   // Chỉ cho phép định dạng ảnh
-  if (file.mimetype.startsWith("image/")) {
+  if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error("Chỉ hỗ trợ tải lên định dạng ảnh!"), false);

@@ -20,6 +20,7 @@ const cron = require("node-cron");
 const path = require("path");
 
 const app = express();
+app.set("trust proxy", 1);
 const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL];
 
 const corsOptions = {

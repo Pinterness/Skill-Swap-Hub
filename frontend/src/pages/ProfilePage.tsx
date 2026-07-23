@@ -15,6 +15,7 @@ import {
   User as UserIcon,
   CheckCircle,
   Shield,
+  Upload,
 } from "lucide-react";
 
 
@@ -33,6 +34,7 @@ export default function ProfilePage() {
   // Info
   const [username, setUsername] = useState(user?.username ?? "");
   const [avatar, setAvatar] = useState(user?.avatar ?? "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Skills
   const [skillsOffered, setSkillsOffered] = useState<string[]>(
@@ -111,6 +113,36 @@ export default function ProfilePage() {
       setSuccess("Cập nhật thông tin thành công!");
     } catch (err: any) {
       setError(err.response?.data?.message ?? "Lỗi hệ thống");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) {
+      setError("Vui lòng chọn một ảnh từ máy trước khi tải lên");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("avatar", avatarFile);
+      const res = await api.put("/api/user/upload-images", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const uploadedAvatar = res.data.user.avatar;
+      setAvatar(uploadedAvatar);
+      setAvatarFile(null);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...user, avatar: uploadedAvatar, stats: liveStats }),
+      );
+      setSuccess("Đã tải ảnh đại diện lên thành công!");
+    } catch (err: any) {
+      setError(err.response?.data?.message ?? "Không thể tải ảnh lên");
     } finally {
       setLoading(false);
     }
@@ -221,8 +253,8 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-12 md:-mt-16">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-4">
               <Avatar
-                avatar={user?.avatar}
-                username={user?.username}
+                avatar={avatar}
+                username={username}
                 className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-card bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-700 shadow-md"
               />
               <div className="text-center md:text-left pb-2">
@@ -481,7 +513,32 @@ export default function ProfilePage() {
             </div>
             <div>
               <label className="text-xs font-medium text-foreground mb-1.5 block">
-                Link Avatar (URL)
+                Tải avatar từ máy
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+                  className="flex-1 text-sm file:mr-3 file:border-0 file:rounded-lg file:bg-primary/10 file:px-3 file:py-2 file:text-primary file:font-medium hover:file:bg-primary/20"
+                />
+                <button
+                  type="button"
+                  onClick={handleAvatarUpload}
+                  disabled={loading || !avatarFile}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  <Upload className="w-4 h-4" />
+                  {loading ? "Đang tải..." : "Tải ảnh"}
+                </button>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Hỗ trợ JPG, PNG, WEBP hoặc GIF, tối đa 5 MB.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1.5 block">
+                Hoặc dùng link avatar (URL)
               </label>
               <input
                 type="text"
