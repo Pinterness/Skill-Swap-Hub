@@ -1,5 +1,4 @@
-// Script dọn dẹp match trùng lặp - CHẠY 1 LẦN DUY NHẤT
-// Cách chạy: đặt file này ở thư mục gốc backend (ngang hàng với server.js), sau đó chạy:
+// Script dọn dẹp match trùng lặp
 //   node mergeDuplicateMatches.js
 
 require("dotenv").config();

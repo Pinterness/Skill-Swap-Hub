@@ -1,12 +1,5 @@
 const nodemailer = require("nodemailer");
 
-/*
- * Cấu hình Gmail App Password:
- * 1. Vào https://myaccount.google.com/security và bật Xác minh 2 bước.
- * 2. Mở https://myaccount.google.com/apppasswords, tạo App Password cho "Mail".
- * 3. Điền email Gmail vào EMAIL_USER và mật khẩu 16 ký tự vừa tạo vào EMAIL_PASS
- *    trong backend/.env. Không dùng mật khẩu đăng nhập Gmail thông thường.
- */
 const gmailConfigured = Boolean(
   process.env.EMAIL_USER && process.env.EMAIL_PASS,
 );
