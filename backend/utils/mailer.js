@@ -6,16 +6,23 @@ const gmailConfigured = Boolean(
 
 const transporter = gmailConfigured
   ? nodemailer.createTransport({
-      service: "gmail",
+      // Bỏ service: "gmail", dùng cấu hình host rõ ràng
+      host: "smtp.gmail.com",
+      port: 465, // Cổng bảo mật SSL
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      // Thêm pool và timeout giúp Render ngắt kết nối sớm nếu bị treo, không bắt người dùng đợi quá lâu
+      pool: true,
+      connectionTimeout: 10000, // Đợi kết nối tối đa 10s
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     })
   : null;
 
 async function sendVerificationEmail({ email, username, otp }) {
-  // Dùng mã này để test thủ công khi SMTP/Gmail chưa hoạt động.
   console.log(`[Email verification] OTP for ${email}: ${otp}`);
 
   if (!transporter) {
@@ -33,6 +40,7 @@ async function sendVerificationEmail({ email, username, otp }) {
       text: `Chào ${username}, mã xác thực SkillSwap Hub của bạn là ${otp}. Mã có hiệu lực trong 10 phút.`,
       html: `<p>Chào <strong>${username}</strong>,</p><p>Mã xác thực SkillSwap Hub của bạn là:</p><h2>${otp}</h2><p>Mã có hiệu lực trong 10 phút.</p>`,
     });
+
     console.log(
       `[Email verification] Gmail accepted message ${info.messageId} for ${email}`,
     );
