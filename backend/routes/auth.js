@@ -15,16 +15,30 @@ const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const hashOtp = (otp) =>
   crypto.createHash("sha256").update(otp).digest("hex");
 
-async function issueVerificationOtp(user) {
+// isNewUser xác định có cần xóa tài khoản nếu Gmail không gửi được hay không.
+async function issueVerificationOtp(user, isNewUser = true) {
   const otp = crypto.randomInt(100000, 1000000).toString();
   user.verificationOtp = hashOtp(otp);
   user.verificationOtpExpires = new Date(Date.now() + OTP_TTL_MS);
+
+  // Lưu OTP trước để có thể xác thực ngay khi email đã được Gmail tiếp nhận.
   await user.save();
-  await sendVerificationEmail({
-    email: user.email,
-    username: user.username,
-    otp,
-  });
+
+  try {
+    await sendVerificationEmail({
+      email: user.email,
+      username: user.username,
+      otp,
+    });
+  } catch (error) {
+    if (isNewUser) {
+      await User.findByIdAndDelete(user._id);
+      console.log(
+        `[Rollback] Đã xóa tài khoản ${user.email} do gửi mail thất bại.`,
+      );
+    }
+    throw error;
+  }
 }
 
 // API Đăng nhập: POST /api/auth/login
@@ -202,7 +216,7 @@ router.post("/resend-verification", async (req, res) => {
       });
     }
 
-    await issueVerificationOtp(user);
+    await issueVerificationOtp(user, false);
     res.json({
       success: true,
       message: "Mã xác thực mới đã được gửi đến email của bạn.",
