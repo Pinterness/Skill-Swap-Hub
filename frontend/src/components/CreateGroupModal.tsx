@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../lib/api";
 import { X, Users } from "lucide-react";
+import Avatar from "./Avatar";
 
 
 interface SimpleUser {
@@ -55,9 +56,6 @@ export default function CreateGroupModal({
     }
   };
 
-  const initials = (name?: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
@@ -103,9 +101,11 @@ export default function CreateGroupModal({
                   onChange={() => toggle(s._id)}
                   className="accent-primary"
                 />
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700">
-                  {initials(s.username)}
-                </div>
+                <Avatar
+                  avatar={s.avatar}
+                  username={s.username}
+                  className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700"
+                />
                 <span className="text-sm">{s.username}</span>
               </label>
             ))

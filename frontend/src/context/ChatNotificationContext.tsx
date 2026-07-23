@@ -12,10 +12,12 @@ import socket from "../lib/socket";
 import { useAuth } from "../hooks/useAuth";
 import { Video, PhoneOff, Users } from "lucide-react";
 import JitsiMeeting from "../components/JitsiMeeting";
+import Avatar from "../components/Avatar";
 
 interface ToastItem {
   id: string;
   senderName: string;
+  senderAvatar?: string;
   content: string;
   conversationKey: string;
 }
@@ -61,8 +63,6 @@ function ToastCard({
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const initials = (name: string) => name.slice(0, 2).toUpperCase();
-
   return (
     <div
       onClick={onClick}
@@ -70,9 +70,11 @@ function ToastCard({
         show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
       }`}
     >
-      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700 shrink-0">
-        {initials(toast.senderName)}
-      </div>
+      <Avatar
+        avatar={toast.senderAvatar}
+        username={toast.senderName}
+        className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700"
+      />
       <div className="min-w-0">
         <p className="text-sm font-medium truncate">{toast.senderName}</p>
         <p className="text-xs text-muted-foreground truncate">
@@ -199,6 +201,7 @@ export function ChatNotificationProvider({
         pushToast({
           id: msg._id,
           senderName: msg.sender?.username || "Người dùng",
+          senderAvatar: msg.sender?.avatar,
           content: msg.content,
           conversationKey: key,
         });
@@ -216,6 +219,7 @@ export function ChatNotificationProvider({
         pushToast({
           id: msg._id,
           senderName: `${msg.sender?.username || "Người dùng"} (nhóm)`,
+          senderAvatar: msg.sender?.avatar,
           content: msg.content,
           conversationKey: key,
         });

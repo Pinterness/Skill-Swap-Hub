@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Star, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import Avatar from "./Avatar";
 
 interface FeaturedUser {
   _id: string;
@@ -34,8 +35,6 @@ export default function FeaturedUsers() {
     };
     fetchFeatured();
   }, []);
-
-  const initials = (name: string) => name.slice(0, 2).toUpperCase();
 
   // Nếu chưa có ai đủ điều kiện (chưa có đánh giá thật nào) thì ẩn hẳn section,
   // tránh hiện 1 khối trống gây khó hiểu cho khách ghé thăm lần đầu
@@ -76,17 +75,11 @@ export default function FeaturedUsers() {
               className="group bg-card border border-border rounded-2xl p-6 cursor-pointer hover:border-primary/40 hover:-translate-y-1 transition-all"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold overflow-hidden shrink-0">
-                  {u.avatar ? (
-                    <img
-                      src={u.avatar}
-                      alt={u.username}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    initials(u.username)
-                  )}
-                </div>
+                <Avatar
+                  avatar={u.avatar}
+                  username={u.username}
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold"
+                />
                 <div className="min-w-0">
                   <p className="font-semibold truncate group-hover:text-primary transition-colors">
                     {u.username}

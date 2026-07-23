@@ -12,6 +12,7 @@ import {
 import socket from "../lib/socket";
 import CreateGroupModal from "../components/CreateGroupModal";
 import { useChatNotifications } from "../context/ChatNotificationContext";
+import Avatar from "../components/Avatar";
 
 interface SimpleUser {
   _id: string;
@@ -233,9 +234,6 @@ export default function ChatPage() {
     return match.sender._id === userId ? match.receiver : match.sender;
   };
 
-  const initials = (name?: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
-
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString("vi-VN", {
       hour: "2-digit",
@@ -350,9 +348,11 @@ export default function ChatPage() {
                       isSelected ? "bg-secondary border-r-2 border-primary" : ""
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700 shrink-0">
-                      {initials(other.username)}
-                    </div>
+                    <Avatar
+                      avatar={other.avatar}
+                      username={other.username}
+                      className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">
                         {other.username || "Người dùng ẩn"}
@@ -425,9 +425,11 @@ export default function ChatPage() {
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
-                  {initials(getOther(selectedMatch)?.username)}
-                </div>
+                <Avatar
+                  avatar={getOther(selectedMatch)?.avatar}
+                  username={getOther(selectedMatch)?.username}
+                  className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700"
+                />
                 <span className="text-sm font-medium">
                   {getOther(selectedMatch)?.username || "Người dùng ẩn"}
                 </span>
@@ -459,9 +461,11 @@ export default function ChatPage() {
                       className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
                     >
                       {!isMine && (
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700 shrink-0">
-                          {initials(msg.sender?.username)}
-                        </div>
+                        <Avatar
+                          avatar={msg.sender?.avatar}
+                          username={msg.sender?.username}
+                          className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700"
+                        />
                       )}
                       <div
                         className={`max-w-[65%] px-3 py-2 rounded-2xl text-sm ${
@@ -558,9 +562,11 @@ export default function ChatPage() {
                       className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
                     >
                       {!isMine && (
-                        <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-[10px] font-medium text-purple-700 shrink-0">
-                          {initials(msg.sender?.username)}
-                        </div>
+                        <Avatar
+                          avatar={msg.sender?.avatar}
+                          username={msg.sender?.username}
+                          className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-[10px] font-medium text-purple-700"
+                        />
                       )}
                       <div className="max-w-[65%]">
                         {!isMine && (

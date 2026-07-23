@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import {
   BookOpen,
   Star,
@@ -209,9 +210,6 @@ export default function DashboardPage() {
       alert("Lỗi hệ thống");
     }
   };
-
-  const initials = (name: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
 
   const displayedPosts = activeTab === "discover" ? discoverPosts : myPosts;
 
@@ -454,9 +452,11 @@ export default function DashboardPage() {
                 }`}
               >
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-foreground">
-                    {initials(post.author?.username)}
-                  </div>
+                  <Avatar
+                    avatar={post.author?.avatar}
+                    username={post.author?.username}
+                    className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-foreground border border-border/50"
+                  />
                   <div className="flex-1">
                     <h4
                       className="text-sm font-bold hover:text-[#ff4a40] transition-colors line-clamp-1"

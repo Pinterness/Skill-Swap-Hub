@@ -4,6 +4,7 @@ import api from "../lib/api";
 import { Star, ArrowLeft, MessageSquare } from "lucide-react";
 // 1. IMPORT THÊM useAuth
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 
 
 interface Review {
@@ -82,9 +83,6 @@ export default function ReviewPage() {
     selectedFilter === 0
       ? reviews
       : reviews.filter((r) => r.rating === selectedFilter);
-
-  const initials = (name?: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
 
   if (loading) {
     return (
@@ -213,9 +211,11 @@ export default function ReviewPage() {
               className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:border-primary/20 transition-colors"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
-                  {initials(review.reviewer?.username)}
-                </div>
+                <Avatar
+                  avatar={review.reviewer?.avatar}
+                  username={review.reviewer?.username}
+                  className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700"
+                />
                 <div>
                   <h4 className="text-sm font-semibold">
                     {review.reviewer?.username || "Người dùng ẩn danh"}

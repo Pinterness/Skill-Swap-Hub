@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import { ArrowLeft, Trash2, Send, X, AlertCircle, Clock } from "lucide-react";
 
 
@@ -78,9 +79,6 @@ export default function PostDetailPage() {
     }
   };
 
-  const initials = (name: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
-
   // UX: Hiệu ứng tải trang (Skeleton Loader) giống Facebook/X
   if (loading) {
     return (
@@ -139,12 +137,12 @@ export default function PostDetailPage() {
         {/* Header: Thông tin người dùng */}
         <div className="p-6 border-b border-border bg-secondary/30 flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div
+            <Avatar
+              avatar={post.author.avatar}
+              username={post.author.username}
               className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-sm font-bold text-green-700 cursor-pointer shadow-sm"
               onClick={() => navigate(`/dashboard/user/${post.author._id}`)}
-            >
-              {initials(post.author.username)}
-            </div>
+            />
             <div>
               <h3
                 onClick={() => navigate(`/dashboard/user/${post.author._id}`)}

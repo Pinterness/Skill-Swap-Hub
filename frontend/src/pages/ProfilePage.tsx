@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import {
   Save,
   Plus,
@@ -93,9 +94,6 @@ export default function ProfilePage() {
     };
     fetchLatestStats();
   }, [user?.id, user?._id]);
-
-  const initials = (name: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
 
   // ── Handlers ──────────────────────────────────────────
 
@@ -222,17 +220,11 @@ export default function ProfilePage() {
         <div className="px-6 pb-6 relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-12 md:-mt-16">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-4">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-card bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-700 overflow-hidden shadow-md">
-                {user?.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  initials(user?.username ?? "U")
-                )}
-              </div>
+              <Avatar
+                avatar={user?.avatar}
+                username={user?.username}
+                className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-card bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-700 shadow-md"
+              />
               <div className="text-center md:text-left pb-2">
                 <h2 className="text-2xl font-bold text-foreground">
                   {user?.username}

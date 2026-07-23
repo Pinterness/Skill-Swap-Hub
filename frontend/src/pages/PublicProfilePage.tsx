@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import { ArrowLeft, Send, Star, BookOpen, Award, X } from "lucide-react";
 
 
@@ -63,8 +64,6 @@ export default function PublicProfilePage() {
     }
   };
 
-  const initials = (name: string) => name?.slice(0, 2).toUpperCase();
-
   if (loading)
     return (
       <div className="flex items-center justify-center h-full py-20">
@@ -93,17 +92,11 @@ export default function PublicProfilePage() {
       <div className="bg-card border border-border rounded-2xl p-6 mb-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-semibold text-blue-700 overflow-hidden">
-              {profile.avatar ? (
-                <img
-                  src={profile.avatar}
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                initials(profile.username)
-              )}
-            </div>
+            <Avatar
+              avatar={profile.avatar}
+              username={profile.username}
+              className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-semibold text-blue-700"
+            />
             <div>
               <h2 className="text-lg font-semibold">{profile.username}</h2>
               <div className="flex items-center gap-3 mt-1">
@@ -305,9 +298,11 @@ export default function PublicProfilePage() {
                 className="bg-card border border-border rounded-xl p-4"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700">
-                    {initials(review.reviewer.username)}
-                  </div>
+                  <Avatar
+                    avatar={review.reviewer.avatar}
+                    username={review.reviewer.username}
+                    className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-medium text-blue-700"
+                  />
                   <span className="text-xs font-medium">
                     {review.reviewer.username}
                   </span>

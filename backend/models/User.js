@@ -18,6 +18,9 @@ const UserSchema = new mongoose.Schema({
         required: [true, 'Vui lòng nhập mật khẩu'],
         minlength: [6, 'Mật khẩu phải từ 6 ký tự trở lên']
     },
+    isVerified: { type: Boolean, default: false },
+    verificationOtp: { type: String, default: null, select: false },
+    verificationOtpExpires: { type: Date, default: null, select: false },
     avatar: { type: String, default: '' },
     skillsOffered: { type: [String], default: [] },
     skillsWanted:  { type: [String], default: [] },

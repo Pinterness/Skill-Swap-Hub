@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import {
   Users,
   FileText,
@@ -21,6 +22,7 @@ interface User {
   role: string;
   status: "active" | "blocked";
   createdAt: string;
+  avatar?: string;
   stats: { totalTaught: number; totalLearned: number; averageRating: number };
 }
 
@@ -28,7 +30,7 @@ interface Post {
   _id: string;
   title: string;
   description?: string;
-  author: { _id: string; username: string; email: string };
+  author: { _id: string; username: string; email: string; avatar?: string };
   status: string;
   isHidden: boolean;
   createdAt: string;
@@ -166,9 +168,6 @@ export default function AdminPage() {
         p.author.username.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [posts, searchQuery]);
-
-  const initials = (name: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -326,9 +325,11 @@ export default function AdminPage() {
                     key={u._id}
                     className="bg-card border border-border/80 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-border transition-colors"
                   >
-                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-foreground shrink-0">
-                      {initials(u.username)}
-                    </div>
+                    <Avatar
+                      avatar={u.avatar}
+                      username={u.username}
+                      className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-foreground"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <span className="text-base font-semibold truncate">
@@ -428,9 +429,11 @@ export default function AdminPage() {
                         </p>
                       )}
                       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                        <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[8px] text-foreground">
-                          {initials(post.author?.username)}
-                        </div>
+                        <Avatar
+                          avatar={post.author?.avatar}
+                          username={post.author?.username}
+                          className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[8px] text-foreground"
+                        />
                         <span className="text-foreground">
                           {post.author?.username}
                         </span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import {
   CheckCircle,
   XCircle,
@@ -138,9 +139,6 @@ export default function SessionPage() {
   };
 
   const filtered = sessions.filter((s) => s.status === tab);
-  const initials = (name: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
-
   const statusConfig = {
     pending: {
       label: "Chờ bắt đầu",
@@ -227,9 +225,11 @@ export default function SessionPage() {
                 className="bg-card border border-border rounded-2xl p-5 hover:border-primary/30 transition-colors"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
-                    {initials(other?.username)}
-                  </div>
+                  <Avatar
+                    avatar={other?.avatar}
+                    username={other?.username}
+                    className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700"
+                  />
                   <div className="flex-1">
                     <p className="text-sm font-medium">
                       {other?.username || "Ẩn danh"}

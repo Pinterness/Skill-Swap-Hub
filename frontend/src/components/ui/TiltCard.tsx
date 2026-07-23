@@ -1,6 +1,7 @@
 import React, { MouseEvent, useRef } from 'react';
+import Avatar from '../Avatar';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { User, BookOpen, Clock } from 'lucide-react';
+import { BookOpen, Clock } from 'lucide-react';
 import { Post } from '../../types'; // Điều chỉnh đường dẫn tùy cấu trúc của bạn
 
 interface TiltCardProps {
@@ -59,13 +60,11 @@ export default function TiltCard({ post }: TiltCardProps) {
         
         {/* Header: Avatar và Tên người dùng */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden border border-border group-hover:border-primary/30 transition-colors">
-            {post.author.avatar ? (
-              <img src={post.author.avatar} alt="avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-5 h-5 text-muted-foreground" />
-            )}
-          </div>
+          <Avatar
+            avatar={post.author.avatar}
+            username={post.author.username}
+            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-border group-hover:border-primary/30 transition-colors text-sm font-bold text-foreground"
+          />
           <div>
             <h3 className="font-['Outfit'] font-semibold text-foreground text-lg leading-tight">
               {post.title}

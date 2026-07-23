@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useChatNotifications } from "../context/ChatNotificationContext";
 import SettingsModal from "../components/SettingsModal";
+import Avatar from "../components/Avatar";
 import {
   LayoutGrid,
   Users,
@@ -124,9 +125,6 @@ export default function MainLayout({
     { key: "review", label: "Đánh giá", icon: Star, path: "/dashboard/review" },
   ];
 
-  const initials = user?.username
-    ? user.username.slice(0, 2).toUpperCase()
-    : "U";
   const pageTitle =
     location.pathname === "/dashboard/admin"
       ? "Admin"
@@ -200,9 +198,11 @@ export default function MainLayout({
         </nav>
 
         <div className="p-3 border-t border-border flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700 shrink-0">
-            {initials}
-          </div>
+          <Avatar
+            avatar={user?.avatar}
+            username={user?.username}
+            className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700"
+          />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold truncate text-foreground">
               {user?.username}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // 1. Thêm useNavigate
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import { Check, X, RotateCcw, Clock, UserCheck } from "lucide-react";
 
 interface Match {
@@ -111,9 +112,6 @@ export default function MatchPage() {
     );
   };
 
-  const initials = (name: string) =>
-    name ? name.slice(0, 2).toUpperCase() : "U";
-
   const list = tab === "received" ? received : sent;
 
   return (
@@ -173,12 +171,12 @@ export default function MatchPage() {
                 className="bg-card border border-border rounded-2xl p-4 flex items-start gap-4 hover:border-primary/30 transition-colors"
               >
                 {/* Avatar - Bấm vào để xem hồ sơ */}
-                <div
+                <Avatar
+                  avatar={other.avatar}
+                  username={other.username}
                   onClick={() => navigate(`/dashboard/user/${other._id}`)}
                   className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                >
-                  {initials(other.username)}
-                </div>
+                />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
