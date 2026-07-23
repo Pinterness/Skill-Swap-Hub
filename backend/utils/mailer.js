@@ -8,7 +8,7 @@ const transporter = gmailConfigured
   ? nodemailer.createTransport({
       // Bỏ service: "gmail", dùng cấu hình host rõ ràng
       host: "smtp.gmail.com",
-      port: 465, // Cổng bảo mật SSL
+      port: 587, // Cổng bảo mật SSL
       secure: true,
       auth: {
         user: process.env.EMAIL_USER,
