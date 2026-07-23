@@ -10,6 +10,8 @@ const transporter = gmailConfigured
       host: "smtp.gmail.com",
       port: 587, // Cổng bảo mật SSL
       secure: false,
+      // Render không định tuyến IPv6 tới Gmail SMTP (lỗi ENETUNREACH), nên ép IPv4.
+      family: 4,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
