@@ -165,8 +165,6 @@ export default function DashboardPage() {
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      // Nếu dùng toast notification thì thay alert bằng toast.success ở đây sẽ hay hơn
-      alert("Đã gửi lời mời kết nối thành công!");
       setSelectedPost(null);
       setMatchMessage("");
     } catch (err: any) {
@@ -545,7 +543,7 @@ export default function DashboardPage() {
                         : "bg-green-500/10 text-green-500"
                     }`}
                   >
-                    {post.type === "learning" ? "🎓 Tìm học" : "📚 Nhận dạy"}
+                    {post.type === "learning" ? " Tìm học" : " Nhận dạy"}
                   </span>
                   <span className="text-[11px] px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground font-semibold">
                     {post.skill?.field} • {post.skill?.level}
