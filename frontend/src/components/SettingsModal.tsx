@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 
 interface SettingsModalProps {
@@ -33,7 +34,7 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const { token, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState<"general" | "password" | "danger">("general");
@@ -231,10 +232,7 @@ export default function SettingsModal({
                         <p className="text-xs text-muted-foreground mt-0.5">{t("languageHint")}</p>
                       </div>
                     </div>
-                    <select aria-label={t("language")} value={language} onChange={(e) => setLanguage(e.target.value as "vi" | "en")} className="h-9 rounded-lg bg-background border border-border px-2 text-sm font-medium outline-none focus:border-primary">
-                      <option value="vi">{t("vietnamese")}</option>
-                      <option value="en">{t("english")}</option>
-                    </select>
+                    <LanguageSwitcher variant="expanded" />
                   </div>
 
                   {/* Tùy chọn Thông báo */}

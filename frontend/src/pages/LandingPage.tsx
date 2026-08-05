@@ -14,13 +14,14 @@ import HowItWorks from "../components/Howitworks";
 import FeaturedUsers from "../components/Featuredusers";
 import Footer from "../components/Footer";
 import { useLanguage } from "../context/LanguageContext";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function LandingPage() {
   const [query, setQuery] = useState("");
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const navigate = useNavigate();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   // Hàm xử lý tìm kiếm khi nhấn Enter hoặc bấm nút Tìm
   const handleSearch = (e?: React.FormEvent) => {
@@ -120,15 +121,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
-            <select
-              aria-label={t("language")}
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as "vi" | "en")}
-              className="h-9 bg-transparent border border-border rounded-lg px-2 text-xs text-muted-foreground outline-none focus:border-primary"
-            >
-              <option value="vi">VI</option>
-              <option value="en">EN</option>
-            </select>
+            <LanguageSwitcher />
             <button
               onClick={() => {
                 setAuthTab("login");

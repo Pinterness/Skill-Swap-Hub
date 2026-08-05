@@ -91,6 +91,14 @@ router.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
+        coverImage: user.coverImage,
+        profileBanner: user.profileBanner || "slate",
+        skillsOffered: user.skillsOffered,
+        skillsWanted: user.skillsWanted,
+        certificates: user.certificates,
+        stats: user.stats,
+        friends: user.friends,
       },
     });
   } catch (error) {

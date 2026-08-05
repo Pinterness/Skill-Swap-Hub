@@ -5,6 +5,9 @@ const multer = require("multer"); // Thêm thư viện multer
 const path = require("path");
 const fs = require("fs");
 const User = require("../models/User");
+const Session = require("../models/Session");
+const Review = require("../models/Review");
+const Match = require("../models/Match");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { getUploadBaseUrl } = require("../utils/uploadUrl");
 
@@ -59,6 +62,33 @@ router.get("/featured", async (req, res) => {
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: "Lỗi hệ thống" });
+  }
+});
+
+// Thống kê cộng đồng hiển thị ở trang Khám phá (không phải số liệu cá nhân).
+router.get("/platform-stats", authMiddleware, async (req, res) => {
+  try {
+    const [completedSessions, acceptedMatches, ratingSummary] = await Promise.all([
+      Session.countDocuments({ status: "completed" }),
+      Match.countDocuments({ status: "accepted" }),
+      Review.aggregate([
+        { $group: { _id: null, averageRating: { $avg: "$rating" }, totalReviews: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const rating = ratingSummary[0];
+    res.json({
+      success: true,
+      stats: {
+        completedSessions,
+        acceptedMatches,
+        averageRating: rating ? Number(rating.averageRating.toFixed(1)) : null,
+        totalReviews: rating?.totalReviews || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi lấy thống kê nền tảng:", error);
+    res.status(500).json({ success: false, message: "Không thể lấy thống kê nền tảng" });
   }
 });
 

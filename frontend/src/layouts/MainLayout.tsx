@@ -127,9 +127,17 @@ export default function MainLayout({
     { key: "review", label: "Đánh giá", icon: Star, path: "/dashboard/review" },
   ];
 
+  const navTranslationKeys = {
+    feed: "discover",
+    match: "invitations",
+    session: "sessions",
+    chat: "messages",
+    profile: "profile",
+    review: "reviews",
+  } as const;
   const translatedNavItems = navItems.map((item) => ({
     ...item,
-    label: t(item.key as "discover" | "invitations" | "sessions" | "messages" | "profile" | "reviews"),
+    label: t(navTranslationKeys[item.key as keyof typeof navTranslationKeys]),
   }));
 
   const pageTitle =

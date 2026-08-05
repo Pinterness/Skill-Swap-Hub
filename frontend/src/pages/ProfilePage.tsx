@@ -35,6 +35,8 @@ export default function ProfilePage() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [avatar, setAvatar] = useState(user?.avatar ?? "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverImage, setCoverImage] = useState(user?.coverImage ?? "");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [profileBanner, setProfileBanner] = useState(user?.profileBanner ?? "slate");
   const [taughtSessions, setTaughtSessions] = useState<any[]>([]);
 
@@ -90,6 +92,7 @@ export default function ProfilePage() {
           setCertificates(freshUser.certificates || []);
           setUsername(freshUser.username || "");
           setAvatar(freshUser.avatar || "");
+          setCoverImage(freshUser.coverImage || "");
           setProfileBanner(freshUser.profileBanner || "slate");
           setTaughtSessions(
             (sessionsRes.data?.sessions || []).filter(
@@ -104,6 +107,7 @@ export default function ProfilePage() {
             ...user,
             username: freshUser.username,
             avatar: freshUser.avatar,
+            coverImage: freshUser.coverImage,
             profileBanner: freshUser.profileBanner,
             skillsOffered: freshUser.skillsOffered,
             skillsWanted: freshUser.skillsWanted,
@@ -130,7 +134,7 @@ export default function ProfilePage() {
       await api.put(`/api/user/profile`, { username, avatar, profileBanner }, { headers });
       localStorage.setItem(
         "user",
-        JSON.stringify({ ...user, username, avatar, profileBanner, stats: liveStats }),
+        JSON.stringify({ ...user, username, avatar, coverImage, profileBanner, stats: liveStats }),
       );
       setSuccess("Cập nhật thông tin thành công!");
     } catch (err: any) {
@@ -165,6 +169,32 @@ export default function ProfilePage() {
       setSuccess("Đã tải ảnh đại diện lên thành công!");
     } catch (err: any) {
       setError(err.response?.data?.message ?? "Không thể tải ảnh lên");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCoverUpload = async () => {
+    if (!coverFile) {
+      setError("Vui lòng chọn một ảnh nền từ máy trước khi tải lên");
+      return;
+    }
+    setError("");
+    setSuccess("");
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("coverImage", coverFile);
+      const res = await api.put("/api/user/upload-images", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const uploadedCover = res.data.user.coverImage;
+      setCoverImage(uploadedCover);
+      setCoverFile(null);
+      localStorage.setItem("user", JSON.stringify({ ...user, coverImage: uploadedCover, profileBanner, stats: liveStats }));
+      setSuccess("Đã tải ảnh nền hồ sơ lên thành công!");
+    } catch (err: any) {
+      setError(err.response?.data?.message ?? "Không thể tải ảnh nền lên");
     } finally {
       setLoading(false);
     }
@@ -268,7 +298,10 @@ export default function ProfilePage() {
       {/* ── HEADER MỚI (Có Banner & Avatar nổi) ── */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6 shadow-sm">
         {/* Banner Gradient */}
-        <div className={`h-32 md:h-40 ${bannerStyles[profileBanner] || bannerStyles.slate} relative`}></div>
+        <div className={`h-32 md:h-40 ${bannerStyles[profileBanner] || bannerStyles.slate} relative overflow-hidden`}>
+          {coverImage && <img src={coverImage} alt="Nền hồ sơ" className="absolute inset-0 w-full h-full object-cover" />}
+          {coverImage && <div className="absolute inset-0 bg-slate-950/15" />}
+        </div>
 
         {/* Thông tin Avatar & Tên */}
         <div className="px-6 pb-6 relative">
@@ -580,6 +613,27 @@ export default function ProfilePage() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-2">Nền xám dịu đang được chọn mặc định. Nhấn một màu rồi lưu thông tin để áp dụng.</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1.5 block">Tải ảnh nền hồ sơ</label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+                  className="flex-1 text-sm file:mr-3 file:border-0 file:rounded-lg file:bg-primary/10 file:px-3 file:py-2 file:text-primary file:font-medium hover:file:bg-primary/20"
+                />
+                <button
+                  type="button"
+                  onClick={handleCoverUpload}
+                  disabled={loading || !coverFile}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-secondary text-foreground border border-border text-sm font-medium rounded-xl hover:bg-secondary/80 transition-colors disabled:opacity-60"
+                >
+                  <Upload className="w-4 h-4" />
+                  {loading ? "Đang tải..." : "Tải nền"}
+                </button>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">Ảnh nền được lưu trực tiếp vào tài khoản, tối đa 5 MB.</p>
             </div>
             <div>
               <label className="text-xs font-medium text-foreground mb-1.5 block">

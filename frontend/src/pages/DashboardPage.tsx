@@ -66,9 +66,10 @@ export default function DashboardPage() {
   const LEVELS = ["Cơ bản", "Trung cấp", "Nâng cao"];
 
   const [liveData, setLiveData] = useState({
-    taught: user?.stats?.totalTaught || 0,
-    rating: user?.stats?.averageRating || 0,
-    friends: user?.friends?.length || 0,
+    taught: 0,
+    rating: null as number | null,
+    friends: 0,
+    totalReviews: 0,
   });
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchLiveStats();
-  }, [user?.id]);
+  }, [token]);
 
   useEffect(() => {
     if (activeTab === "discover") {
@@ -94,14 +95,16 @@ export default function DashboardPage() {
   }, [activeTab]);
 
   const fetchLiveStats = async () => {
-    if (!user?.id) return;
     try {
-      const res = await api.get(`/api/profile/${user.id}`);
-      if (res.data?.user) {
+      const res = await api.get("/api/user/platform-stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data?.stats) {
         setLiveData({
-          taught: res.data.user.stats?.totalTaught || 0,
-          rating: res.data.user.stats?.averageRating || 0,
-          friends: res.data.user.friends?.length || 0,
+          taught: res.data.stats.completedSessions || 0,
+          rating: res.data.stats.averageRating,
+          friends: res.data.stats.acceptedMatches || 0,
+          totalReviews: res.data.stats.totalReviews || 0,
         });
       }
     } catch (error) {
@@ -229,7 +232,7 @@ export default function DashboardPage() {
                 <BookOpen className="w-5 h-5" />
               </div>
               <span className="text-sm font-medium text-muted-foreground">
-                Buổi dạy
+                Buổi dạy hoàn thành
               </span>
             </div>
             <p className="text-3xl font-bold">{liveData.taught}</p>
@@ -240,10 +243,11 @@ export default function DashboardPage() {
                 <Star className="w-5 h-5" />
               </div>
               <span className="text-sm font-medium text-muted-foreground">
-                Đánh giá TB
+                Đánh giá TB cộng đồng
               </span>
             </div>
-            <p className="text-3xl font-bold">{liveData.rating || "—"}</p>
+            <p className="text-3xl font-bold">{liveData.rating ?? "—"}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{liveData.totalReviews} đánh giá</p>
           </div>
           <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 ease-out">
             <div className="flex items-center gap-3 mb-3">
@@ -251,7 +255,7 @@ export default function DashboardPage() {
                 <Users className="w-5 h-5" />
               </div>
               <span className="text-sm font-medium text-muted-foreground">
-                Kết nối
+                Kết nối thành công
               </span>
             </div>
             <p className="text-3xl font-bold">{liveData.friends}</p>
