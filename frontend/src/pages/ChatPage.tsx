@@ -91,15 +91,17 @@ export default function ChatPage() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showChatSettings, setShowChatSettings] = useState(false);
   const [chatSettings, setChatSettings] = useState(() => {
+    const defaults = { showTime: true, compact: false, sendOnEnter: true };
     try {
+      const saved = JSON.parse(localStorage.getItem("chatSettings") || "{}");
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)) return defaults;
       return {
-        showTime: true,
-        compact: false,
-        sendOnEnter: true,
-        ...JSON.parse(localStorage.getItem("chatSettings") || "{}"),
+        showTime: typeof saved.showTime === "boolean" ? saved.showTime : defaults.showTime,
+        compact: typeof saved.compact === "boolean" ? saved.compact : defaults.compact,
+        sendOnEnter: typeof saved.sendOnEnter === "boolean" ? saved.sendOnEnter : defaults.sendOnEnter,
       };
     } catch {
-      return { showTime: true, compact: false, sendOnEnter: true };
+      return defaults;
     }
   });
   const groupBottomRef = useRef<HTMLDivElement>(null);
@@ -659,17 +661,21 @@ export default function ChatPage() {
               <button onClick={() => setShowChatSettings(false)} className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4 mx-auto" /></button>
             </div>
             <div className="p-4 space-y-3">
-              {[
-                { key: "showTime" as const, icon: Clock3, title: "Hiển thị thời gian", description: "Hiện thời điểm gửi bên dưới mỗi tin nhắn." },
-                { key: "compact" as const, icon: Rows3, title: "Chế độ gọn", description: "Thu hẹp khoảng cách để xem nhiều tin nhắn hơn." },
-                { key: "sendOnEnter" as const, icon: CornerDownLeft, title: "Gửi bằng phím Enter", description: "Tắt để Enter không gửi tin nhắn." },
-              ].map(({ key, icon: Icon, title, description }) => (
-                <button key={key} type="button" onClick={() => setChatSettings((prev) => ({ ...prev, [key]: !prev[key] }))} className="w-full text-left flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-secondary/25 hover:bg-secondary/50 transition-colors">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Icon className="w-4 h-4" /></div>
-                  <div className="flex-1"><p className="text-sm font-semibold">{title}</p><p className="text-xs text-muted-foreground mt-0.5">{description}</p></div>
-                  <span className={`relative w-10 h-6 rounded-full transition-colors ${chatSettings[key] ? "bg-primary" : "bg-muted-foreground/30"}`}><span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatSettings[key] ? "translate-x-4" : ""}`} /></span>
-                </button>
-              ))}
+              <button type="button" onClick={() => setChatSettings((prev) => ({ ...prev, showTime: !prev.showTime }))} className="w-full text-left flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-secondary/25 hover:bg-secondary/50 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Clock3 className="w-4 h-4" /></div>
+                <div className="flex-1"><p className="text-sm font-semibold">Hiển thị thời gian</p><p className="text-xs text-muted-foreground mt-0.5">Hiện thời điểm gửi bên dưới mỗi tin nhắn.</p></div>
+                <span className={`relative w-10 h-6 rounded-full transition-colors ${chatSettings.showTime ? "bg-primary" : "bg-muted-foreground/30"}`}><span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatSettings.showTime ? "translate-x-4" : ""}`} /></span>
+              </button>
+              <button type="button" onClick={() => setChatSettings((prev) => ({ ...prev, compact: !prev.compact }))} className="w-full text-left flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-secondary/25 hover:bg-secondary/50 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Rows3 className="w-4 h-4" /></div>
+                <div className="flex-1"><p className="text-sm font-semibold">Chế độ gọn</p><p className="text-xs text-muted-foreground mt-0.5">Thu hẹp khoảng cách để xem nhiều tin nhắn hơn.</p></div>
+                <span className={`relative w-10 h-6 rounded-full transition-colors ${chatSettings.compact ? "bg-primary" : "bg-muted-foreground/30"}`}><span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatSettings.compact ? "translate-x-4" : ""}`} /></span>
+              </button>
+              <button type="button" onClick={() => setChatSettings((prev) => ({ ...prev, sendOnEnter: !prev.sendOnEnter }))} className="w-full text-left flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-secondary/25 hover:bg-secondary/50 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><CornerDownLeft className="w-4 h-4" /></div>
+                <div className="flex-1"><p className="text-sm font-semibold">Gửi bằng phím Enter</p><p className="text-xs text-muted-foreground mt-0.5">Tắt để Enter không gửi tin nhắn.</p></div>
+                <span className={`relative w-10 h-6 rounded-full transition-colors ${chatSettings.sendOnEnter ? "bg-primary" : "bg-muted-foreground/30"}`}><span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatSettings.sendOnEnter ? "translate-x-4" : ""}`} /></span>
+              </button>
             </div>
           </div>
         </div>
