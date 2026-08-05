@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useChatNotifications } from "../context/ChatNotificationContext";
 import SettingsModal from "../components/SettingsModal";
 import Avatar from "../components/Avatar";
+import { useLanguage } from "../context/LanguageContext";
 import {
   LayoutGrid,
   Users,
@@ -30,6 +31,7 @@ export default function MainLayout({
   const { user, token } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { language, t } = useLanguage();
 
   const {
     unreadCounts,
@@ -125,10 +127,15 @@ export default function MainLayout({
     { key: "review", label: "Đánh giá", icon: Star, path: "/dashboard/review" },
   ];
 
+  const translatedNavItems = navItems.map((item) => ({
+    ...item,
+    label: t(item.key as "discover" | "invitations" | "sessions" | "messages" | "profile" | "reviews"),
+  }));
+
   const pageTitle =
     location.pathname === "/dashboard/admin"
       ? "Admin"
-      : (navItems.find((n) => n.path === location.pathname)?.label ??
+      : (translatedNavItems.find((n) => n.path === location.pathname)?.label ??
         "SkillSwap");
 
   return (
@@ -146,7 +153,7 @@ export default function MainLayout({
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground px-2 py-2">
             Menu
           </p>
-          {navItems
+          {translatedNavItems
             .slice(0, 4)
             .map(({ key, label, icon: Icon, path, badge }) => {
               const active = location.pathname === path;
@@ -173,7 +180,7 @@ export default function MainLayout({
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground px-2 py-2 pt-4">
             Cá nhân
           </p>
-          {navItems.slice(4).map(({ label, icon: Icon, path }) => {
+          {translatedNavItems.slice(4).map(({ label, icon: Icon, path }) => {
             const active = location.pathname === path;
             return (
               <Link
@@ -304,7 +311,7 @@ export default function MainLayout({
                             </p>
                             <p className="text-[11px] text-muted-foreground mt-1">
                               {new Date(notif.createdAt).toLocaleString(
-                                "vi-VN",
+                                language === "vi" ? "vi-VN" : "en-US",
                               )}
                             </p>
                           </div>

@@ -14,6 +14,7 @@ import PublicProfilePage from "../pages/PublicProfilePage";
 import ReviewPage from "../pages/ReviewPage";
 import { ChatNotificationProvider } from "../context/ChatNotificationContext";
 import { ThemeProvider } from "../context/ThemeContext";
+import { LanguageProvider } from "../context/LanguageContext";
 import SkillLearnPage from "../pages/SkillLearnPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <LanguageProvider>
       <ThemeProvider>
         <ChatNotificationProvider>
           <Routes>
@@ -154,6 +156,7 @@ export default function App() {
           </Routes>
         </ChatNotificationProvider>
       </ThemeProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 }

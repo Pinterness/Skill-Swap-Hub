@@ -13,7 +13,10 @@ router.get("/", auth, async (req, res) => {
     })
       .populate("teacherId", "username avatar")
       .populate("studentId", "username avatar")
-      .populate("matchId")
+      .populate({
+        path: "matchId",
+        populate: { path: "postId", select: "title skill" },
+      })
       .sort({ createdAt: -1 });
 
     res.json({ success: true, sessions });

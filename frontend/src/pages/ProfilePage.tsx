@@ -35,6 +35,16 @@ export default function ProfilePage() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [avatar, setAvatar] = useState(user?.avatar ?? "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [profileBanner, setProfileBanner] = useState(user?.profileBanner ?? "slate");
+  const [taughtSessions, setTaughtSessions] = useState<any[]>([]);
+
+  const bannerStyles: Record<string, string> = {
+    slate: "bg-gradient-to-r from-slate-500 to-slate-600",
+    ocean: "bg-gradient-to-r from-cyan-600 to-blue-700",
+    forest: "bg-gradient-to-r from-emerald-600 to-teal-700",
+    sunset: "bg-gradient-to-r from-orange-500 to-rose-600",
+    plum: "bg-gradient-to-r from-violet-600 to-purple-700",
+  };
 
   // Skills
   const [skillsOffered, setSkillsOffered] = useState<string[]>(
@@ -67,7 +77,10 @@ export default function ProfilePage() {
       const userId = user?.id || user?._id;
       if (!userId) return;
       try {
-        const res = await api.get(`/api/profile/${userId}`);
+        const [res, sessionsRes] = await Promise.all([
+          api.get(`/api/profile/${userId}`),
+          api.get("/api/session", { headers }),
+        ]);
         const freshUser = res.data?.user;
         if (freshUser) {
           // Đồng bộ TOÀN BỘ dữ liệu mới nhất từ DB, không chỉ riêng stats
@@ -77,12 +90,21 @@ export default function ProfilePage() {
           setCertificates(freshUser.certificates || []);
           setUsername(freshUser.username || "");
           setAvatar(freshUser.avatar || "");
+          setProfileBanner(freshUser.profileBanner || "slate");
+          setTaughtSessions(
+            (sessionsRes.data?.sessions || []).filter(
+              (session: any) =>
+                session.status === "completed" &&
+                String(session.teacherId?._id || session.teacherId) === String(userId),
+            ),
+          );
 
           // Ghi lại đầy đủ vào localStorage để các trang khác cùng nhận đúng dữ liệu
           const updatedUser = {
             ...user,
             username: freshUser.username,
             avatar: freshUser.avatar,
+            profileBanner: freshUser.profileBanner,
             skillsOffered: freshUser.skillsOffered,
             skillsWanted: freshUser.skillsWanted,
             certificates: freshUser.certificates,
@@ -105,10 +127,10 @@ export default function ProfilePage() {
     setSuccess("");
     try {
       setLoading(true);
-      await api.put(`/api/user/profile`, { username, avatar }, { headers });
+      await api.put(`/api/user/profile`, { username, avatar, profileBanner }, { headers });
       localStorage.setItem(
         "user",
-        JSON.stringify({ ...user, username, avatar, stats: liveStats }),
+        JSON.stringify({ ...user, username, avatar, profileBanner, stats: liveStats }),
       );
       setSuccess("Cập nhật thông tin thành công!");
     } catch (err: any) {
@@ -246,7 +268,7 @@ export default function ProfilePage() {
       {/* ── HEADER MỚI (Có Banner & Avatar nổi) ── */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6 shadow-sm">
         {/* Banner Gradient */}
-        <div className="h-32 md:h-40 bg-gradient-to-r from-blue-600 to-indigo-500 relative"></div>
+        <div className={`h-32 md:h-40 ${bannerStyles[profileBanner] || bannerStyles.slate} relative`}></div>
 
         {/* Thông tin Avatar & Tên */}
         <div className="px-6 pb-6 relative">
@@ -493,6 +515,39 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {tab === "overview" && (
+        <section className="bg-card border border-border rounded-2xl p-6">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-primary" /> Lịch sử đã dạy
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Các buổi học đã hoàn thành với vai trò người dạy.</p>
+            </div>
+            <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">{taughtSessions.length} buổi</span>
+          </div>
+          {taughtSessions.length ? (
+            <div className="space-y-2">
+              {taughtSessions.map((session) => {
+                const post = session.matchId?.postId;
+                const skill = post?.skill?.name || "Kỹ năng chưa xác định";
+                return (
+                  <div key={session._id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50 border border-border">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{skill}</p>
+                      <p className="text-xs text-muted-foreground truncate">{post?.title || "Buổi trao đổi kỹ năng"}</p>
+                    </div>
+                    <time className="shrink-0 text-xs text-muted-foreground">{new Date(session.endedAt || session.updatedAt).toLocaleDateString("vi-VN")}</time>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded-xl">Chưa có buổi dạy nào hoàn thành.</p>
+          )}
+        </section>
+      )}
+
       {/* ── Tab: Thông tin (Chỉnh sửa) ── */}
       {tab === "info" && (
         <div className="bg-card border border-border rounded-2xl p-6">
@@ -510,6 +565,21 @@ export default function ProfilePage() {
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full h-11 px-4 rounded-xl bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground"
               />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground mb-2 block">Nền phía sau ảnh đại diện</label>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(bannerStyles).map(([key, style]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={`Chọn nền ${key}`}
+                    onClick={() => setProfileBanner(key)}
+                    className={`h-9 w-12 rounded-lg ${style} transition-all ${profileBanner === key ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : "opacity-70 hover:opacity-100"}`}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Nền xám dịu đang được chọn mặc định. Nhấn một màu rồi lưu thông tin để áp dụng.</p>
             </div>
             <div>
               <label className="text-xs font-medium text-foreground mb-1.5 block">

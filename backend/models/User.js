@@ -22,6 +22,7 @@ const UserSchema = new mongoose.Schema({
     verificationOtp: { type: String, default: null, select: false },
     verificationOtpExpires: { type: Date, default: null, select: false },
     avatar: { type: String, default: '' },
+    profileBanner: { type: String, default: 'slate' },
     skillsOffered: { type: [String], default: [] },
     skillsWanted:  { type: [String], default: [] },
     certificates: [

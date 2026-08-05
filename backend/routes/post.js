@@ -41,9 +41,8 @@ router.get("/", async (req, res) => {
 // Lấy toàn bộ bài đăng của chính mình (để quản lý cả bài đã đóng)
 router.get("/my-posts", authMiddleware, async (req, res) => {
   try {
-    // SỬA Ở ĐÂY: Thêm .populate() để lấy thông tin user giống hệt như API Khám phá
     const posts = await Post.find({ author: req.user.id })
-      .populate("author", "username avatar stats") // <--- THÊM DÒNG NÀY
+      .populate("author", "username avatar stats") // ""
       .sort({
         createdAt: -1,
       });

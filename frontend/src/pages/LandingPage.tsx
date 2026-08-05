@@ -13,12 +13,14 @@ import SwapCards from "../components/Swapcards";
 import HowItWorks from "../components/Howitworks";
 import FeaturedUsers from "../components/Featuredusers";
 import Footer from "../components/Footer";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function LandingPage() {
   const [query, setQuery] = useState("");
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
 
   // Hàm xử lý tìm kiếm khi nhấn Enter hoặc bấm nút Tìm
   const handleSearch = (e?: React.FormEvent) => {
@@ -101,23 +103,32 @@ export default function LandingPage() {
               href="#kham-pha"
               className="hover:text-primary transition-colors"
             >
-              Khám phá
+              {t("discover")}
             </a>
             <a
               href="#cong-dong"
               className="hover:text-primary transition-colors"
             >
-              Cộng đồng
+              {t("community")}
             </a>
             <a
               href="#ve-chung-toi"
               className="hover:text-primary transition-colors"
             >
-              Về chúng tôi
+              {t("about")}
             </a>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <select
+              aria-label={t("language")}
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as "vi" | "en")}
+              className="h-9 bg-transparent border border-border rounded-lg px-2 text-xs text-muted-foreground outline-none focus:border-primary"
+            >
+              <option value="vi">VI</option>
+              <option value="en">EN</option>
+            </select>
             <button
               onClick={() => {
                 setAuthTab("login");
@@ -125,7 +136,7 @@ export default function LandingPage() {
               }}
               className="px-5 py-2.5 text-sm font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
             >
-              Đăng nhập
+              {t("login")}
             </button>
             <button
               onClick={() => {
@@ -134,7 +145,7 @@ export default function LandingPage() {
               }}
               className="px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(255,107,74,0.2)] hover:shadow-[0_0_30px_rgba(255,107,74,0.4)] hover:-translate-y-0.5 cursor-pointer"
             >
-              Tham gia miễn phí
+              {t("joinFree")}
             </button>
           </div>
         </nav>

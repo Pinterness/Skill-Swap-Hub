@@ -113,13 +113,14 @@ router.put(
 // 2. Cập nhật thông tin cá nhân & Kỹ năng (Cần đăng nhập)
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
-    const { username, skillsOffered, skillsWanted, avatar } = req.body;
+    const { username, skillsOffered, skillsWanted, avatar, profileBanner } = req.body;
 
     const updateData = {};
     if (username !== undefined) updateData.username = username;
     if (skillsOffered !== undefined) updateData.skillsOffered = skillsOffered;
     if (skillsWanted !== undefined) updateData.skillsWanted = skillsWanted;
     if (avatar !== undefined) updateData.avatar = avatar; // Vẫn giữ để hỗ trợ update qua link nếu cần
+    if (profileBanner !== undefined) updateData.profileBanner = profileBanner;
 
     const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {
       new: true,
