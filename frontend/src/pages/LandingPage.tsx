@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search, Sparkles, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,7 @@ import FeaturedUsers from "../components/Featuredusers";
 import Footer from "../components/Footer";
 import { useLanguage } from "../context/LanguageContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import api from "../lib/api";
 
 export default function LandingPage() {
   const [query, setQuery] = useState("");
@@ -22,56 +23,41 @@ export default function LandingPage() {
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState("");
+
+  const fetchPosts = async (search = "") => {
+    try {
+      setPostsLoading(true);
+      setPostsError("");
+      const res = await api.get("/api/post", { params: { limit: 6, ...(search.trim() ? { skill: search.trim() } : {}) } });
+      const landingPosts: Post[] = (res.data?.posts || []).map((post: any) => ({
+        _id: post._id,
+        title: post.title,
+        description: post.description,
+        skillsOffered: post.type === "teaching" ? [post.skill?.name].filter(Boolean) : [],
+        skillsRequired: post.type === "learning" ? [post.skill?.name].filter(Boolean) : [],
+        author: post.author,
+        createdAt: post.createdAt,
+      }));
+      setPosts(landingPosts);
+    } catch (error) {
+      console.error("Không thể tải bài đăng trang chủ:", error);
+      setPostsError("Không thể tải bài đăng lúc này. Vui lòng thử lại sau.");
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPosts(); }, []);
 
   // Hàm xử lý tìm kiếm khi nhấn Enter hoặc bấm nút Tìm
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (query.trim()) {
-      const skillParam = query.trim().toLowerCase().replace(/\s+/g, "-");
-      navigate(`/learn/${skillParam}`);
-    }
+    fetchPosts(query);
+    document.getElementById("kham-pha")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  const dummyPosts: Post[] = [
-    {
-      _id: "1",
-      title: "Cần người hướng dẫn ReactJS thực tế",
-      description:
-        "Mình đã học xong cơ bản nhưng cần người review code và hướng dẫn làm project thực tế.",
-      skillsRequired: ["ReactJS", "Code Review"],
-      skillsOffered: ["Tiếng Anh", "Figma"],
-      author: {
-        _id: "u1",
-        username: "Alex_Dev",
-        avatar: "https://i.pravatar.cc/150?u=alex",
-      },
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: "2",
-      title: "Giao tiếp Tiếng Anh đổi lấy UI/UX Design",
-      description:
-        "Mình là giáo viên Tiếng Anh (IELTS 7.5). Muốn tìm bạn designer để trao đổi.",
-      skillsRequired: ["UI/UX Design", "Wireframing"],
-      skillsOffered: ["IELTS Speaking", "Ngữ pháp"],
-      author: { _id: "u2", username: "Sarah_English" },
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: "3",
-      title: "Trao đổi kỹ năng Backend (Node.js) & Marketing",
-      description:
-        "Mình rành về Node.js, MongoDB nhưng đang loay hoay không biết cách quảng bá sản phẩm.",
-      skillsRequired: ["Marketing", "SEO"],
-      skillsOffered: ["Node.js", "MongoDB"],
-      author: {
-        _id: "u3",
-        username: "CodeMaster",
-        avatar: "https://i.pravatar.cc/150?u=code",
-      },
-      createdAt: new Date().toISOString(),
-    },
-  ];
 
   const handleAuthSuccess = () => {
     setShowAuth(false);
@@ -231,11 +217,10 @@ export default function LandingPage() {
               {/* Đổi span thành button và gắn sự kiện chuyển hướng onClick */}
               {["UI/UX Design", "Giao tiếp tiếng Anh", "Node.js", "Figma"].map(
                 (skill) => {
-                  const skillParam = skill.toLowerCase().replace(/\s+/g, "-");
                   return (
                     <button
                       key={skill}
-                      onClick={() => navigate(`/learn/${skillParam}`)}
+                      onClick={() => { setQuery(skill); fetchPosts(skill); document.getElementById("kham-pha")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
                       className="px-4 py-1.5 rounded-full text-sm font-['DM_Mono'] bg-secondary/40 border border-border hover:border-primary/50 hover:text-primary transition-colors cursor-pointer text-muted-foreground"
                     >
                       {skill}
@@ -254,16 +239,18 @@ export default function LandingPage() {
       </main>
 
       {/* ── BÀI ĐĂNG GẦN ĐÂY ── */}
-      <section className="relative z-10 py-16 px-4 max-w-7xl mx-auto border-t border-border/50">
+      <section id="kham-pha" className="relative z-10 py-16 px-4 max-w-7xl mx-auto border-t border-border/50 scroll-mt-20">
         <div className="text-center md:text-left mb-10">
           <h2 className="text-3xl font-bold text-foreground">
-            Giao dịch kỹ năng mới nhất
+            {query ? `Kết quả cho “${query}”` : "Bài đăng kỹ năng mới nhất"}
           </h2>
           <p className="text-muted-foreground mt-2">
-            Khám phá những nhu cầu học tập và giảng dạy vừa được đăng tải
+            Nội dung công khai để bạn đọc và tìm người phù hợp trước khi tham gia.
           </p>
         </div>
-        <PostGrid posts={dummyPosts} />
+        {postsError ? (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-center text-sm text-muted-foreground"><p>{postsError}</p><button onClick={() => fetchPosts(query)} className="mt-3 text-primary font-medium hover:underline">Thử lại</button></div>
+        ) : <PostGrid posts={posts} isLoading={postsLoading} showHeader={false} />}
       </section>
 
       {/* ── CÁC SECTION KHÁC ── */}

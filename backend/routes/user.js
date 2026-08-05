@@ -82,10 +82,7 @@ const upload = multer({
 
 router.get("/featured", async (req, res) => {
   try {
-    const users = await User.find({
-      status: "active",
-      "stats.totalReviews": { $gte: 1 },
-    })
+    const users = await User.find({ status: "active" })
       .select("username avatar skillsOffered stats")
       .sort({ "stats.averageRating": -1, "stats.totalTaught": -1 })
       .limit(6);

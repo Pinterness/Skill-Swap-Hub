@@ -14,7 +14,14 @@ router.get("/", async (req, res) => {
     if (type) query.type = type;
     if (field) query["skill.field"] = field;
     if (level) query["skill.level"] = level;
-    if (skill) query["skill.name"] = { $regex: skill, $options: "i" };
+    if (skill) {
+      const expression = { $regex: skill, $options: "i" };
+      query.$or = [
+        { "skill.name": expression },
+        { title: expression },
+        { description: expression },
+      ];
+    }
 
     const posts = await Post.find(query)
       .sort({ createdAt: -1 })

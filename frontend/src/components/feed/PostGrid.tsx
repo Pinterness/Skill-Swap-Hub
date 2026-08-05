@@ -5,9 +5,10 @@ import { Post } from '../../types';
 interface PostGridProps {
   posts: Post[];
   isLoading?: boolean;
+  showHeader?: boolean;
 }
 
-export default function PostGrid({ posts, isLoading = false }: PostGridProps) {
+export default function PostGrid({ posts, isLoading = false, showHeader = true }: PostGridProps) {
   
   // Trạng thái chờ dữ liệu (Khi chưa có API)
   if (isLoading) {
@@ -31,7 +32,8 @@ export default function PostGrid({ posts, isLoading = false }: PostGridProps) {
 
   // Trạng thái có dữ liệu
   return (
-    <section className="w-full max-w-7xl mx-auto py-16 px-4" id="kham-pha">
+    <section className="w-full max-w-7xl mx-auto py-4" id="kham-pha">
+      {showHeader && <>
       <div className="mb-10 text-left">
         <h2 className="text-3xl font-bold font-['Outfit'] text-foreground mb-2">
           Khám phá Cơ hội Trao đổi
@@ -40,6 +42,7 @@ export default function PostGrid({ posts, isLoading = false }: PostGridProps) {
           Tìm người phù hợp để cùng nhau nâng cấp kỹ năng.
         </p>
       </div>
+      </>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ perspective: "1000px" }}>
         {posts.map((post) => (
