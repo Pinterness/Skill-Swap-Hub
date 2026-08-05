@@ -3,6 +3,7 @@ import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import {
   Send,
+  X,
   MessageSquare,
   Video,
   Users,
