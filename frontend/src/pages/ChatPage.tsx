@@ -8,6 +8,10 @@ import {
   Users,
   UserPlus,
   LogOut,
+  Settings2,
+  Clock3,
+  Rows3,
+  CornerDownLeft,
 } from "lucide-react";
 import socket from "../lib/socket";
 import CreateGroupModal from "../components/CreateGroupModal";
@@ -85,12 +89,29 @@ export default function ChatPage() {
   const [groupContent, setGroupContent] = useState("");
   const [groupLoading, setGroupLoading] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showChatSettings, setShowChatSettings] = useState(false);
+  const [chatSettings, setChatSettings] = useState(() => {
+    try {
+      return {
+        showTime: true,
+        compact: false,
+        sendOnEnter: true,
+        ...JSON.parse(localStorage.getItem("chatSettings") || "{}"),
+      };
+    } catch {
+      return { showTime: true, compact: false, sendOnEnter: true };
+    }
+  });
   const groupBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchMatches();
     fetchGroups();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatSettings", JSON.stringify(chatSettings));
+  }, [chatSettings]);
 
   // ── Đánh dấu "đang xem" đúng cuộc trò chuyện hiện tại ──
   useEffect(() => {
@@ -300,10 +321,14 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-full relative">
+    <div className="flex h-full relative bg-[radial-gradient(circle_at_75%_0%,rgba(124,58,237,0.08),transparent_30%)]">
       {/* ── Sidebar ── */}
-      <div className="w-64 min-w-64 border-r border-border flex flex-col">
-        <div className="p-3 border-b border-border">
+      <div className="w-64 min-w-64 border-r border-border flex flex-col bg-card/30">
+        <div className="p-3 border-b border-border space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div><p className="text-sm font-bold">Tin nhắn</p><p className="text-[11px] text-muted-foreground">Không gian trao đổi của bạn</p></div>
+            <button onClick={() => setShowChatSettings(true)} className="w-8 h-8 rounded-lg border border-border bg-background/60 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors" title="Cài đặt chat"><Settings2 className="w-4 h-4" /></button>
+          </div>
           <div className="flex gap-1 p-1 bg-secondary rounded-xl">
             <button
               onClick={() => setViewMode("direct")}
@@ -344,8 +369,8 @@ export default function ChatPage() {
                   <button
                     key={match._id}
                     onClick={() => setSelectedMatch(match)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left ${
-                      isSelected ? "bg-secondary border-r-2 border-primary" : ""
+                    className={`w-full flex items-center gap-3 mx-2 w-[calc(100%-16px)] px-3 py-3 rounded-xl hover:bg-secondary/80 transition-all text-left ${
+                      isSelected ? "bg-primary/10 text-foreground shadow-sm ring-1 ring-primary/20" : ""
                     }`}
                   >
                     <Avatar
@@ -393,8 +418,8 @@ export default function ChatPage() {
                   <button
                     key={group._id}
                     onClick={() => setSelectedGroup(group)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left ${
-                      isSelected ? "bg-secondary border-r-2 border-primary" : ""
+                    className={`w-full flex items-center gap-3 mx-2 w-[calc(100%-16px)] px-3 py-3 rounded-xl hover:bg-secondary/80 transition-all text-left ${
+                      isSelected ? "bg-primary/10 text-foreground shadow-sm ring-1 ring-primary/20" : ""
                     }`}
                   >
                     <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-xs font-medium text-purple-700 shrink-0">
@@ -423,7 +448,7 @@ export default function ChatPage() {
       {viewMode === "direct" &&
         (selectedMatch && getOther(selectedMatch) ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-3">
+            <div className="px-5 py-3.5 border-b border-border bg-card/40 backdrop-blur-sm flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Avatar
                   avatar={getOther(selectedMatch)?.avatar}
@@ -443,7 +468,7 @@ export default function ChatPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+            <div className={`flex-1 overflow-y-auto px-5 py-5 flex flex-col ${chatSettings.compact ? "gap-1.5" : "gap-3"}`}>
               {loading ? (
                 <div className="text-center py-10">
                   <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
@@ -468,18 +493,18 @@ export default function ChatPage() {
                         />
                       )}
                       <div
-                        className={`max-w-[65%] px-3 py-2 rounded-2xl text-sm ${
+                          className={`max-w-[68%] px-3.5 ${chatSettings.compact ? "py-1.5" : "py-2.5"} rounded-2xl text-sm shadow-sm ${
                           isMine
                             ? "bg-primary text-white rounded-br-sm"
                             : "bg-secondary text-foreground rounded-bl-sm"
                         }`}
                       >
                         {msg.content}
-                        <p
+                        {chatSettings.showTime && <p
                           className={`text-[10px] mt-1 ${isMine ? "text-white/60" : "text-muted-foreground"}`}
                         >
                           {formatTime(msg.createdAt)}
-                        </p>
+                        </p>}
                       </div>
                     </div>
                   );
@@ -490,19 +515,20 @@ export default function ChatPage() {
 
             <form
               onSubmit={sendMessage}
-              className="px-5 py-3 border-t border-border flex items-center gap-3"
+              className="px-5 py-3 border-t border-border bg-card/50 flex items-center gap-3"
             >
               <input
                 type="text"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !chatSettings.sendOnEnter) e.preventDefault(); }}
                 placeholder="Nhập tin nhắn..."
-                className="flex-1 h-10 px-4 rounded-full bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground"
+                className="flex-1 h-11 px-4 rounded-2xl bg-secondary/80 border border-border focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none text-sm text-foreground placeholder:text-muted-foreground transition-all"
               />
               <button
                 type="submit"
                 disabled={!content.trim()}
-                className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 hover:-translate-y-0.5 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -544,7 +570,7 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+            <div className={`flex-1 overflow-y-auto px-5 py-5 flex flex-col ${chatSettings.compact ? "gap-1.5" : "gap-3"}`}>
               {groupLoading ? (
                 <div className="text-center py-10">
                   <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
@@ -582,11 +608,11 @@ export default function ChatPage() {
                           }`}
                         >
                           {msg.content}
-                          <p
+                          {chatSettings.showTime && <p
                             className={`text-[10px] mt-1 ${isMine ? "text-white/60" : "text-muted-foreground"}`}
                           >
                             {formatTime(msg.createdAt)}
-                          </p>
+                          </p>}
                         </div>
                       </div>
                     </div>
@@ -604,6 +630,7 @@ export default function ChatPage() {
                 type="text"
                 value={groupContent}
                 onChange={(e) => setGroupContent(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !chatSettings.sendOnEnter) e.preventDefault(); }}
                 placeholder="Nhập tin nhắn cho cả nhóm..."
                 className="flex-1 h-10 px-4 rounded-full bg-secondary border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm text-foreground placeholder:text-muted-foreground"
               />
@@ -624,6 +651,30 @@ export default function ChatPage() {
         ))}
 
       {/* ── Modal tạo nhóm ── */}
+      {showChatSettings && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-secondary/30">
+              <div><h3 className="font-bold">Cài đặt chat</h3><p className="text-xs text-muted-foreground mt-0.5">Lưu riêng trên thiết bị này</p></div>
+              <button onClick={() => setShowChatSettings(false)} className="w-8 h-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4 mx-auto" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              {[
+                { key: "showTime" as const, icon: Clock3, title: "Hiển thị thời gian", description: "Hiện thời điểm gửi bên dưới mỗi tin nhắn." },
+                { key: "compact" as const, icon: Rows3, title: "Chế độ gọn", description: "Thu hẹp khoảng cách để xem nhiều tin nhắn hơn." },
+                { key: "sendOnEnter" as const, icon: CornerDownLeft, title: "Gửi bằng phím Enter", description: "Tắt để Enter không gửi tin nhắn." },
+              ].map(({ key, icon: Icon, title, description }) => (
+                <button key={key} type="button" onClick={() => setChatSettings((prev) => ({ ...prev, [key]: !prev[key] }))} className="w-full text-left flex items-center gap-3 p-3.5 rounded-xl border border-border/70 bg-secondary/25 hover:bg-secondary/50 transition-colors">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Icon className="w-4 h-4" /></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{title}</p><p className="text-xs text-muted-foreground mt-0.5">{description}</p></div>
+                  <span className={`relative w-10 h-6 rounded-full transition-colors ${chatSettings[key] ? "bg-primary" : "bg-muted-foreground/30"}`}><span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${chatSettings[key] ? "translate-x-4" : ""}`} /></span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCreateGroup && (
         <CreateGroupModal
           students={matchPartners}
