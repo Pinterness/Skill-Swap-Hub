@@ -79,6 +79,9 @@ export default function ChatPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [nextMessageCursor, setNextMessageCursor] = useState<string | null>(null);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -87,6 +90,9 @@ export default function ChatPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [groupMessages, setGroupMessages] = useState<GroupMessage[]>([]);
+  const [hasMoreGroupMessages, setHasMoreGroupMessages] = useState(false);
+  const [nextGroupCursor, setNextGroupCursor] = useState<string | null>(null);
+  const [loadingOlderGroupMessages, setLoadingOlderGroupMessages] = useState(false);
   const [groupContent, setGroupContent] = useState("");
   const [groupLoading, setGroupLoading] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -188,15 +194,19 @@ export default function ChatPage() {
     }
   };
 
-  const fetchMessages = async (matchId: string) => {
+  const fetchMessages = async (matchId: string, before?: string) => {
     try {
-      setLoading(true);
-      const res = await api.get(`/api/message/${matchId}`, { headers });
-      setMessages(res.data.messages || []);
+      if (before) setLoadingOlderMessages(true);
+      else setLoading(true);
+      const res = await api.get(`/api/message/${matchId}`, { headers, params: { limit: 50, ...(before ? { before } : {}) } });
+      setMessages((prev) => before ? [...(res.data.messages || []), ...prev] : (res.data.messages || []));
+      setHasMoreMessages(Boolean(res.data.hasMore));
+      setNextMessageCursor(res.data.nextBefore || null);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setLoadingOlderMessages(false);
     }
   };
 
@@ -209,17 +219,19 @@ export default function ChatPage() {
     }
   };
 
-  const fetchGroupMessages = async (groupId: string) => {
+  const fetchGroupMessages = async (groupId: string, before?: string) => {
     try {
-      setGroupLoading(true);
-      const res = await api.get(`/api/group/${groupId}/messages`, {
-        headers,
-      });
-      setGroupMessages(res.data.messages || []);
+      if (before) setLoadingOlderGroupMessages(true);
+      else setGroupLoading(true);
+      const res = await api.get(`/api/group/${groupId}/messages`, { headers, params: { limit: 50, ...(before ? { before } : {}) } });
+      setGroupMessages((prev) => before ? [...(res.data.messages || []), ...prev] : (res.data.messages || []));
+      setHasMoreGroupMessages(Boolean(res.data.hasMore));
+      setNextGroupCursor(res.data.nextBefore || null);
     } catch (err) {
       console.error(err);
     } finally {
       setGroupLoading(false);
+      setLoadingOlderGroupMessages(false);
     }
   };
 
@@ -472,6 +484,16 @@ export default function ChatPage() {
             </div>
 
             <div className={`flex-1 overflow-y-auto px-5 py-5 flex flex-col ${chatSettings.compact ? "gap-1.5" : "gap-3"}`}>
+              {hasMoreMessages && (
+                <button
+                  type="button"
+                  disabled={loadingOlderMessages}
+                  onClick={() => selectedMatch && nextMessageCursor && fetchMessages(selectedMatch._id, nextMessageCursor)}
+                  className="self-center text-xs font-medium text-primary hover:underline disabled:opacity-60 py-1"
+                >
+                  {loadingOlderMessages ? "Đang tải..." : "Tải tin nhắn cũ hơn"}
+                </button>
+              )}
               {loading ? (
                 <div className="text-center py-10">
                   <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
@@ -574,6 +596,16 @@ export default function ChatPage() {
             </div>
 
             <div className={`flex-1 overflow-y-auto px-5 py-5 flex flex-col ${chatSettings.compact ? "gap-1.5" : "gap-3"}`}>
+              {hasMoreGroupMessages && (
+                <button
+                  type="button"
+                  disabled={loadingOlderGroupMessages}
+                  onClick={() => selectedGroup && nextGroupCursor && fetchGroupMessages(selectedGroup._id, nextGroupCursor)}
+                  className="self-center text-xs font-medium text-primary hover:underline disabled:opacity-60 py-1"
+                >
+                  {loadingOlderGroupMessages ? "Đang tải..." : "Tải tin nhắn cũ hơn"}
+                </button>
+              )}
               {groupLoading ? (
                 <div className="text-center py-10">
                   <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />

@@ -25,4 +25,7 @@ const MessageSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Giữ truy vấn lịch sử của một cuộc trò chuyện nhanh khi dữ liệu tăng lớn.
+MessageSchema.index({ matchId: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Message", MessageSchema);

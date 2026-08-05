@@ -186,11 +186,24 @@ router.get("/:groupId/messages", auth, async (req, res) => {
       });
     }
 
-    const messages = await GroupMessage.find({ groupId: req.params.groupId })
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+    const filter = { groupId: req.params.groupId };
+    if (req.query.before && !Number.isNaN(new Date(req.query.before).getTime())) {
+      filter.createdAt = { $lt: new Date(req.query.before) };
+    }
+    const newestFirst = await GroupMessage.find(filter)
       .populate("sender", "username avatar")
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: -1 })
+      .limit(limit + 1);
+    const hasMore = newestFirst.length > limit;
+    const messages = newestFirst.slice(0, limit).reverse();
 
-    res.json({ success: true, messages });
+    res.json({
+      success: true,
+      messages,
+      hasMore,
+      nextBefore: hasMore && messages.length ? messages[0].createdAt : null,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "Lỗi hệ thống" });
   }

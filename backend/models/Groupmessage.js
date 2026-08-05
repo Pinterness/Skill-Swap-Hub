@@ -18,4 +18,6 @@ const GroupMessageSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+GroupMessageSchema.index({ groupId: 1, createdAt: -1 });
+
 module.exports = mongoose.model("GroupMessage", GroupMessageSchema);

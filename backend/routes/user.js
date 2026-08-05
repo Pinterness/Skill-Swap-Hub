@@ -4,12 +4,43 @@ const bcrypt = require("bcrypt");
 const multer = require("multer"); // Thêm thư viện multer
 const path = require("path");
 const fs = require("fs");
+const { v2: cloudinary } = require("cloudinary");
 const User = require("../models/User");
 const Session = require("../models/Session");
 const Review = require("../models/Review");
 const Match = require("../models/Match");
 const authMiddleware = require("../middlewares/authMiddleware");
 const { getUploadBaseUrl } = require("../utils/uploadUrl");
+
+const cloudinaryConfigured = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET,
+);
+
+if (cloudinaryConfigured) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
+
+async function getPersistentUploadUrl(file, baseUrl) {
+  if (!cloudinaryConfigured) return baseUrl + file.filename;
+
+  try {
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: "skillswap-hub/profiles",
+      resource_type: "image",
+    });
+    return result.secure_url;
+  } finally {
+    // File trên Render chỉ là bản tạm trong lúc đẩy lên Cloudinary.
+    fs.unlink(file.path, () => {});
+  }
+}
 
 // ─── CẤU HÌNH MULTER (XỬ LÝ UPLOAD ẢNH) ───
 // Tạo thư mục "uploads" nếu chưa tồn tại
@@ -103,15 +134,22 @@ router.put(
   async (req, res) => {
     try {
       const updateData = {};
-      // Deploy config: upload public URL is centralized and can use SERVER_URL.
+      // Khi đã cấu hình Cloudinary, ảnh được lưu vĩnh viễn ngoài Render.
+      // Nếu thiếu biến môi trường Cloudinary, giữ tương thích với lưu trữ cục bộ cũ.
       const baseUrl = getUploadBaseUrl(req);
 
       if (req.files && req.files["avatar"]) {
-        updateData.avatar = baseUrl + req.files["avatar"][0].filename;
+        updateData.avatar = await getPersistentUploadUrl(
+          req.files["avatar"][0],
+          baseUrl,
+        );
       }
 
       if (req.files && req.files["coverImage"]) {
-        updateData.coverImage = baseUrl + req.files["coverImage"][0].filename;
+        updateData.coverImage = await getPersistentUploadUrl(
+          req.files["coverImage"][0],
+          baseUrl,
+        );
       }
 
       if (Object.keys(updateData).length === 0) {

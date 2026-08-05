@@ -24,11 +24,24 @@ router.get("/:matchId", auth, async (req, res) => {
         .json({ success: false, message: "Không có quyền xem tin nhắn này" });
     }
 
-    const messages = await Message.find({ matchId: req.params.matchId })
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+    const filter = { matchId: req.params.matchId };
+    if (req.query.before && !Number.isNaN(new Date(req.query.before).getTime())) {
+      filter.createdAt = { $lt: new Date(req.query.before) };
+    }
+    const newestFirst = await Message.find(filter)
       .populate("sender", "username avatar")
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: -1 })
+      .limit(limit + 1);
+    const hasMore = newestFirst.length > limit;
+    const messages = newestFirst.slice(0, limit).reverse();
 
-    res.json({ success: true, messages });
+    res.json({
+      success: true,
+      messages,
+      hasMore,
+      nextBefore: hasMore && messages.length ? messages[0].createdAt : null,
+    });
   } catch (error) {
     console.log("Lỗi chi tiết tại server:", error);
     res.status(500).json({ success: false, message: "Lỗi hệ thống" });
